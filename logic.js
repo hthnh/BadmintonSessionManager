@@ -10,7 +10,7 @@ function getPlayerPriorityScore(player, rule, now) {
     return 0;
 }
 
-function getBestPairing(group) {
+export function getBestPairing(group) {
     const p = group;
     const pairings = [
         [[p[0], p[1]], [p[2], p[3]]],

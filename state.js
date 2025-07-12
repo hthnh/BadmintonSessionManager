@@ -81,9 +81,9 @@ export function loadState() {
         state.courts.forEach(c => { c.players = []; c.startTime = null; c.timerInterval = null; });
     } else {
         // Dữ liệu mẫu ban đầu
-        state.players = [ { id: 1, name: 'An', level: 4, status: 'active', gamesPlayed: 0, type: 'Cố định', lastMatchEndTime: null }, { id: 2, name: 'Bình', level: 5, status: 'inactive', gamesPlayed: 0, type: 'Cố định', lastMatchEndTime: null }, { id: 3, name: 'Cường', level: 3, status: 'active', gamesPlayed: 0, type: 'Vãng lai', lastMatchEndTime: null }];
-        state.nextPlayerId = 4;
-        state.courts = [{ id: 1, players: [], startTime: null, timerInterval: null }];
-        state.nextCourtId = 2;
+        state.players = [];
+        state.nextPlayerId = 1;
+        state.courts = [];
+        state.nextCourtId = 1;
     }
 }
