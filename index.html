@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống Quản lý Sân Cầu Lông</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body>
 
@@ -14,34 +15,41 @@
     </header>
 
     <main class="container">
-        <section id="player-management">
-            <h2>Danh sách người chơi</h2>
+        <aside class="sidebar">
+            <section id="attendance-management">
+                <h2>Điểm danh (CLB)</h2>
+                <div id="attendance-list"></div>
+            </section>
             
-            <form id="add-player-form">
-                <input type="text" id="player-name-input" placeholder="Tên người chơi" required>
-                <input type="number" id="player-level-input" title="Trình độ (1-5)" placeholder="Trình" min="1" max="5" required>
-                <select id="player-type-input">
-                    <option value="Cố định">Cố định</option>
-                    <option value="Vãng lai">Vãng lai</option>
-                </select>
-                <button type="submit">Thêm</button>
-            </form>
+            <section id="player-management">
+                <h2>Danh sách người chơi (Có mặt)</h2>
+                <form id="add-player-form">
+                    <input type="text" id="player-name-input" placeholder="Tên người chơi" required>
+                    <input type="number" id="player-level-input" title="Trình độ (1-5)" placeholder="Trình" min="1" max="5" required>
+                    <select id="player-type-input">
+                        <option value="Cố định">Cố định</option>
+                        <option value="Vãng lai">Vãng lai</option>
+                    </select>
+                    <button type="submit">Thêm</button>
+                </form>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th>Họ tên</th>
-                        <th>Trình độ</th>
-                        <th>Trạng thái</th>
-                        <th>Số trận</th>
-                        <th>TG Nghỉ</th>
-                        <th>Loại</th>
-                        <th>Hành động</th>
-                    </tr>
-                </thead>
-                <tbody id="player-list-body"></tbody>
-            </table>
-        </section>
+                <table id="player-list-table">
+                    <thead>
+                        <tr>
+                            <th>Họ tên</th>
+                            <th>Trình độ</th>
+                            <th>Trạng thái</th>
+                            <th>Số trận</th>
+                            <th>TG Nghỉ</th>
+                            <th>Loại</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="player-list-body">
+                        </tbody>
+                </table>
+            </section>
+        </aside>
 
         <div class="main-content">
             <section id="match-suggestion">
@@ -53,9 +61,10 @@
 
             <section id="current-match">
                 <h2>Trận đấu hiện tại</h2>
-                <div id="current-match-courts" class="courts-container"></div>
+                <div id="current-match-courts" class="courts-container drop-zone">
+                    </div>
             </section>
-
+            
             <section id="match-history">
                 <h2>Lịch sử trận đấu</h2>
                 <table id="history-table">
@@ -94,10 +103,15 @@
                 <hr>
                 <label>Quản lý sân</label>
                 <button type="button" id="add-court-btn">Thêm 1 sân</button>
+                 <hr>
+                <label>Quản lý dữ liệu</label>
+                <button type="button" id="export-data-btn">Xuất danh sách (JSON)</button>
+                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                <label for="import-file-input" class="button-like-label">Nhập danh sách (JSON)</label>
+                <button type="button" id="clear-data-btn">Xóa toàn bộ dữ liệu</button>
             </form>
         </section>
-    </main>
 
-    <script src="script.js"></script>
+    <script src="main.js" type="module"></script>
 </body>
 </html>

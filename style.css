@@ -56,9 +56,15 @@ section {
     padding: 1.5rem;
 }
 
-#player-management { flex: 2; min-width: 450px; }
+.sidebar {
+    flex: 2;
+    min-width: 480px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
 .main-content { flex: 3; display: flex; flex-direction: column; gap: 1.5rem; min-width: 400px; }
-#configuration { flex: 1; min-width: 280px; }
+#configuration { flex: 1; min-width: 250px; }
 
 h2 {
     margin-top: 0;
@@ -66,6 +72,36 @@ h2 {
     border-bottom: 2px solid var(--bg-color);
     padding-bottom: 0.5rem;
     margin-bottom: 1rem;
+}
+
+/* Khu vực điểm danh */
+#attendance-management {
+    max-height: 300px; /* Giới hạn chiều cao */
+    display: flex;
+    flex-direction: column;
+}
+#attendance-list {
+    overflow-y: auto; /* Thêm thanh cuộn nếu danh sách dài */
+    padding-right: 10px;
+}
+.attendance-player {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+.attendance-player:hover {
+    background-color: #f1f3f5;
+}
+.attendance-player input[type="checkbox"] {
+    transform: scale(1.2); /* Làm checkbox to hơn chút */
+    cursor: pointer;
+}
+.attendance-player label {
+    cursor: pointer;
+    flex-grow: 1;
 }
 
 /* Bảng biểu */
@@ -83,7 +119,7 @@ tbody tr:hover { background-color: #f1f3f5; }
 .level-cell { font-weight: bold; text-align: center; font-size: 1.1rem; }
 
 /* Form thêm người chơi */
-#add-player-form { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+#add-player-form { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
 #add-player-form input[type="text"] { flex-grow: 1; }
 #add-player-form input[type="number"] { width: 70px; }
 #add-player-form button { padding: 0.5rem 1rem; background-color: var(--primary-color); }
@@ -92,12 +128,35 @@ tbody tr:hover { background-color: #f1f3f5; }
 /* Các thành phần tương tác */
 .clickable { cursor: pointer; user-select: none; transition: background-color 0.2s; }
 .clickable:hover { background-color: #e9ecef; }
-button { background-color: var(--green); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: background-color 0.2s; }
-button:hover { background-color: #218838; }
+button, .button-like-label { background-color: var(--green); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: background-color 0.2s; text-align: center; display: block; margin-bottom: 0.5rem;}
+button:hover, .button-like-label:hover { background-color: #218838; }
 button:disabled, button:disabled:hover { background-color: #ccc; cursor: not-allowed; }
-.delete-player-btn { background: none; border: none; color: var(--red); font-size: 1.2rem; padding: 0 0.5rem; }
+.delete-player-btn { background: none; border: none; color: var(--red); font-size: 1.2rem; padding: 0 0.5rem; margin-bottom: 0; }
 .delete-player-btn:hover { color: #a51825; background: none; }
-#confirm-match-btn { margin-top: 1rem; }
+#confirm-match-btn { margin-top: 1rem; width: 100%;}
+#clear-data-btn {
+    background-color: var(--red);
+    width: 100%;
+}
+#clear-data-btn:hover {
+    background-color: #c82333;
+}
+#export-data-btn {
+    background-color: var(--secondary-color);
+    width: 100%;
+}
+#export-data-btn:hover {
+    background-color: #5a6268;
+}
+.button-like-label {
+    background-color: var(--blue);
+    width: 100%;
+    box-sizing: border-box;
+}
+.button-like-label:hover {
+    background-color: #0069d9;
+}
+
 
 /* Khu vực sân đấu */
 .courts-container { display: flex; flex-direction: column; gap: 1rem; margin: 1rem 0; }
@@ -111,11 +170,13 @@ button:disabled, button:disabled:hover { background-color: #ccc; cursor: not-all
 .delete-court-btn:hover { background: #f1b0b7; }
 
 /* Cấu hình */
-.form-group { margin-bottom: 1rem; }
-.form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+#configuration form { display: flex; flex-direction: column; gap: 1rem;}
+#configuration label { font-weight: 500; }
+.form-group { margin-bottom: 0; }
+.form-group label { display: block; margin-bottom: 0.5rem; }
 .form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; }
-hr { border: none; border-top: 1px solid #eee; margin: 1rem 0; }
-#add-court-btn { width: 100%; margin-top: 0.5rem; background-color: var(--secondary-color); }
+hr { border: none; border-top: 1px solid #eee; margin: 1rem 0; width: 100%;}
+#add-court-btn { width: 100%; background-color: var(--secondary-color); }
 #add-court-btn:hover { background-color: #5a6268; }
 
 /* Hiển thị các cặp đấu */
@@ -144,11 +205,74 @@ hr { border: none; border-top: 1px solid #eee; margin: 1rem 0; }
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    margin-top: 1rem;
+    margin-top: 0;
 }
 .form-group-checkbox label {
     margin-bottom: 0;
 }
 .form-group-checkbox input[type="checkbox"] {
     width: auto;
+}
+
+
+/* --- ĐỊNH DẠNG CHO CHỈNH SỬA TRỰC TIẾP --- */
+
+/* Làm cho ô có thể chỉnh sửa trông giống như có thể click vào */
+.editable-cell {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+    padding: 0.5rem;
+}
+
+.editable-cell:hover {
+    background-color: #e9ecef;
+}
+
+/* Định dạng khi người dùng đang chỉnh sửa ô */
+.editable-cell:focus {
+    background-color: white;
+    outline: 2px solid var(--primary-color);
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+
+/* --- ĐỊNH DẠNG CHO KÉO THẢ (DRAG & DROP) --- */
+
+/* Hiệu ứng cho người chơi đang được kéo đi */
+.sortable-ghost {
+    opacity: 0.4;
+    background-color: #c8ebfb;
+}
+
+/* Hiệu ứng cho người chơi được chọn để kéo */
+.sortable-chosen {
+    background-color: #cce5ff;
+}
+
+/* Hiệu ứng cho vùng có thể thả vào khi kéo một người chơi qua */
+.court.sortable-ghost {
+    border-style: dashed;
+    border-color: var(--primary-color);
+}
+
+.team-drop-zone {
+    border: 2px dashed #ccc;
+    min-height: 40px; /* Đảm bảo vùng thả có chiều cao tối thiểu */
+    border-radius: 4px;
+    padding: 0.5rem;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+/* Khi kéo người chơi qua vùng thả */
+.team-drop-zone.sortable-over {
+    background-color: #e8f5e9; /* Màu xanh lá cây nhạt */
+    border-color: var(--green);
+}
+
+/* Xóa viền khi vùng thả đã có người */
+.team-drop-zone.has-players {
+    border: none;
+    min-height: auto;
+    padding: 0;
 }
