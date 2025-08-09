@@ -23,7 +23,7 @@ export function getBestPairing(group) {
         const teamALevel = pairing[0][0].level + pairing[0][1].level;
         const teamBLevel = pairing[1][0].level + pairing[1][1].level;
         const diff = Math.abs(teamALevel - teamBLevel);
-        if (diff < minDiff) {
+        if (diff < minDiff || (diff === minDiff && Math.random() < 0.5)) { // Thêm điều kiện ngẫu nhiên khi diff bằng nhau
             minDiff = diff;
             bestPairing = pairing;
         }
