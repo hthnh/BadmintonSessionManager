@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống Quản lý Sân Cầu Lông</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 </head>
 <body>
@@ -112,6 +112,6 @@
             </form>
         </section>
 
-    <script src="main.js" type="module"></script>
+    <script src="{{ url_for('static', filename='main.js') }}" type="module"></script>
 </body>
 </html>
