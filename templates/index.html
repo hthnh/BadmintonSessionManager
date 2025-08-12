@@ -5,112 +5,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hệ thống Quản lý Sân Cầu Lông</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <header>
-        <h1>🏸 Bảng điều khiển sân cầu lông</h1>
-        <div id="clock">Đang tải giờ...</div>
+    <header class="app-header">
+        <h1>🏸 Quản lý Sân Cầu Lông</h1>
+        <div id="clock" class="clock">Đang tải giờ...</div>
     </header>
 
-    <main class="container">
-        <aside class="sidebar">
-            <section id="attendance-management">
-                <h2>Điểm danh (CLB)</h2>
-                <div id="attendance-list"></div>
-            </section>
+    <div class="main-container">
+
+        <main class="content-main">
             
-            <section id="player-management">
-                <h2>Danh sách người chơi (Có mặt)</h2>
-                <form id="add-player-form">
+            <section class="card">
+                <h2 class="card__title">Gợi ý & Bắt đầu trận đấu</h2>
+                <div class="card__actions">
+                    <button id="suggest-btn" class="button button--primary">Gợi ý lượt tiếp theo</button>
+                    <button id="confirm-match-btn" class="button button--success" disabled>Xác nhận & Bắt đầu</button>
+                </div>
+                <div id="suggestion-output" class="courts-container">
+                    </div>
+            </section>
+
+            <section class="card">
+                <h2 class="card__title">Các trận đang diễn ra</h2>
+                <div id="current-match-courts" class="courts-container">
+                    </div>
+            </section>
+
+            <section class="card">
+                <h2 class="card__title">Lịch sử trận đấu</h2>
+                <div class="table-container">
+                    <table class="data-table" id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Lượt</th>
+                                <th>Thời gian</th>
+                                <th>Sân</th>
+                                <th>Người chơi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+
+        <aside class="sidebar">
+            
+            <section class="card">
+                <h2 class="card__title">Quản lý người chơi</h2>
+                <form id="add-player-form" class="player-form">
                     <input type="text" id="player-name-input" placeholder="Tên người chơi" required>
-                    <input type="number" id="player-level-input" title="Trình độ (1-5)" placeholder="Trình" min="1" max="5" required>
+                    <input type="number" id="player-elo-input" title="ELO ban đầu" placeholder="ELO" value="1500">
                     <select id="player-type-input">
                         <option value="Cố định">Cố định</option>
                         <option value="Vãng lai">Vãng lai</option>
                     </select>
-                    <button type="submit">Thêm</button>
+                    <button type="submit" class="button button--primary">Thêm</button>
                 </form>
 
-                <table id="player-list-table">
-                    <thead>
-                        <tr>
-                            <th>Họ tên</th>
-                            <th>Trình độ</th>
-                            <th>Trạng thái</th>
-                            <th>Số trận</th>
-                            <th>TG Nghỉ</th>
-                            <th>Loại</th>
-                            <th>Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody id="player-list-body">
-                        </tbody>
-                </table>
-            </section>
-        </aside>
-
-        <div class="main-content">
-            <section id="match-suggestion">
-                <h2>Gợi ý lượt tiếp theo</h2>
-                <button id="suggest-btn">Gợi ý người chơi</button>
-                <div id="suggestion-output" class="courts-container"></div>
-                <button id="confirm-match-btn" disabled>Xác nhận & Bắt đầu trận</button>
-            </section>
-
-            <section id="current-match">
-                <h2>Trận đấu hiện tại</h2>
-                <div id="current-match-courts" class="courts-container drop-zone">
-                    </div>
+                <div class="table-container">
+                    <table class="data-table" id="player-list-table">
+                        <thead>
+                            <tr>
+                                <th>Họ tên</th>
+                                <th>ELO</th>
+                                <th>Trạng thái</th>
+                                <th>Số trận</th>
+                                <th>TG Nghỉ</th>
+                                <th>Loại</th>
+                                <th>Xóa</th>
+                            </tr>
+                        </thead>
+                        <tbody id="player-list-body">
+                            </tbody>
+                    </table>
+                </div>
             </section>
             
-            <section id="match-history">
-                <h2>Lịch sử trận đấu</h2>
-                <table id="history-table">
-                     <thead>
-                        <tr>
-                            <th>Lượt</th>
-                            <th>Thời gian</th>
-                            <th>Sân</th>
-                            <th>Người chơi</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-table-body"></tbody>
-                </table>
+            <section class="card">
+                <h2 class="card__title">⚙️ Cấu hình</h2>
+                <form class="config-form">
+                    <div class="form-group">
+                        <label for="suggestion-rule">Luật ưu tiên gợi ý</label>
+                        <select id="suggestion-rule">
+                            <option value="combined" selected>Kết hợp (nghỉ & số trận)</option>
+                            <option value="rest">Ưu tiên người nghỉ lâu nhất</option>
+                            <option value="games">Ưu tiên người chơi ít nhất</option>
+                        </select>
+                    </div>
+                    <div class="form-group form-group--checkbox">
+                        <input type="checkbox" id="avoid-duplicate-pairs" checked>
+                        <label for="avoid-duplicate-pairs">Ưu tiên cặp đôi mới</label>
+                    </div>
+                    <hr>
+                    <label>Quản lý sân & dữ liệu</label>
+                    <div class="card__actions card__actions--vertical">
+                        <button type="button" id="add-court-btn" class="button button--secondary">Thêm 1 sân</button>
+                        <button type="button" id="export-data-btn" class="button button--secondary">Xuất danh sách (JSON)</button>
+                        <label for="import-file-input" class="button button--secondary">Nhập danh sách (JSON)</label>
+                        <input type="file" id="import-file-input" accept=".json" hidden>
+                        <button type="button" id="clear-data-btn" class="button button--danger">Xóa toàn bộ dữ liệu</button>
+                    </div>
+                </form>
             </section>
-        </div>
 
-        <section id="configuration">
-            <h2>⚙️ Cấu hình</h2>
-            <form>
-                <div class="form-group">
-                    <label for="players-per-court">Số người mỗi sân</label>
-                    <input type="number" id="players-per-court" value="4" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="suggestion-rule">Luật ưu tiên gợi ý</label>
-                    <select id="suggestion-rule">
-                        <option value="rest">Ưu tiên người nghỉ lâu nhất</option>
-                        <option value="games">Ưu tiên người chơi ít nhất</option>
-                        <option value="combined" selected>Kết hợp (nghỉ & số trận)</option>
-                    </select>
-                </div>
-                <div class="form-group-checkbox">
-                    <input type="checkbox" id="avoid-duplicate-pairs" checked>
-                    <label for="avoid-duplicate-pairs">Ưu tiên cặp đôi mới</label>
-                </div>
-                <hr>
-                <label>Quản lý sân</label>
-                <button type="button" id="add-court-btn">Thêm 1 sân</button>
-                 <hr>
-                <label>Quản lý dữ liệu</label>
-                <button type="button" id="export-data-btn">Xuất danh sách (JSON)</button>
-                <input type="file" id="import-file-input" accept=".json" style="display: none;">
-                <label for="import-file-input" class="button-like-label">Nhập danh sách (JSON)</label>
-                <button type="button" id="clear-data-btn">Xóa toàn bộ dữ liệu</button>
-            </form>
-        </section>
+        </aside>
+
+    </div>
 
     <script src="{{ url_for('static', filename='main.js') }}" type="module"></script>
 </body>

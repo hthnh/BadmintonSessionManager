@@ -1,278 +1,283 @@
-/* Cài đặt chung */
+/* style.css (Phiên bản thiết kế lại) */
+
+/* === BIẾN TOÀN CỤC === */
 :root {
-    --primary-color: #007bff;
-    --secondary-color: #6c757d;
-    --bg-color: #f4f4f9;
-    --surface-color: #ffffff;
-    --text-color: #333;
-    --border-color: #dee2e6;
-    --green: #28a745;
-    --red: #dc3545;
-    --yellow: #ffc107;
-    --blue: #007bff;
+    --color-primary: #007bff;
+    --color-primary-dark: #0056b3;
+    --color-secondary: #6c757d;
+    --color-success: #28a745;
+    --color-danger: #dc3545;
+    --color-warning: #ffc107;
+    --color-light: #f8f9fa;
+    --color-dark: #343a40;
+    --color-text: #212529;
+    --color-background: #f4f7f9;
+    --color-surface: #ffffff;
+    --color-border: #dee2e6;
+
+    --font-family: 'Be Vietnam Pro', sans-serif;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --transition: all 0.2s ease-in-out;
+}
+
+/* === RESET & CÀI ĐẶT CHUNG === */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    margin: 0;
+    font-family: var(--font-family);
+    background-color: var(--color-background);
+    color: var(--color-text);
     line-height: 1.6;
 }
 
-/* Header */
-header {
-    background-color: var(--primary-color);
-    color: white;
+/* === BỐ CỤC CHÍNH === */
+.app-header {
+    background-color: var(--color-surface);
+    color: var(--color-primary);
     padding: 1rem 2rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-bottom: 1px solid var(--color-border);
 }
 
-header h1 {
+.app-header h1 {
     font-size: 1.5rem;
-    margin: 0;
 }
 
-#clock {
+.clock {
     font-size: 1rem;
     font-weight: 500;
+    color: var(--color-secondary);
 }
 
-/* Bố cục chính */
-.container {
+.main-container {
     display: flex;
     flex-wrap: wrap;
-    padding: 1.5rem;
     gap: 1.5rem;
+    padding: 1.5rem;
+    align-items: flex-start; /* Canh các cột từ trên xuống */
 }
 
-section {
-    background-color: var(--surface-color);
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-    padding: 1.5rem;
+.content-main {
+    flex: 3; /* Chiếm 3/5 không gian */
+    min-width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
 .sidebar {
-    flex: 2;
-    min-width: 480px;
+    flex: 2; /* Chiếm 2/5 không gian */
+    min-width: 400px;
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
 }
-.main-content { flex: 3; display: flex; flex-direction: column; gap: 1.5rem; min-width: 400px; }
-#configuration { flex: 1; min-width: 250px; }
 
-h2 {
-    margin-top: 0;
-    color: var(--primary-color);
-    border-bottom: 2px solid var(--bg-color);
+/* === THÀNH PHẦN CARD (THẺ) === */
+.card {
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+}
+
+.card__title {
+    font-size: 1.25rem;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
     padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.card__actions {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+.card__actions--vertical {
+    flex-direction: column;
+}
+
+
+/* === CÁC NÚT BẤM (BUTTON) === */
+.button {
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1.5rem;
+    font-family: var(--font-family);
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: center;
+}
+
+.button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.button--primary {
+    background-color: var(--color-primary);
+    color: white;
+}
+.button--primary:hover:not(:disabled) {
+    background-color: var(--color-primary-dark);
+}
+
+.button--success {
+    background-color: var(--color-success);
+    color: white;
+}
+.button--success:hover:not(:disabled) {
+    background-color: #1e7e34;
+}
+
+.button--danger {
+    background-color: var(--color-danger);
+    color: white;
+}
+.button--danger:hover:not(:disabled) {
+    background-color: #b21f2d;
+}
+
+.button--secondary {
+    background-color: var(--color-light);
+    color: var(--color-dark);
+    border: 1px solid var(--color-border);
+}
+.button--secondary:hover:not(:disabled) {
+    background-color: #e2e6ea;
+}
+
+
+/* === FORM & INPUT === */
+.form-group {
+    margin-bottom: 1rem;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+.form-group--checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.form-group--checkbox label {
+    margin-bottom: 0;
+}
+
+.player-form {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    gap: 0.5rem;
     margin-bottom: 1rem;
 }
 
-/* Khu vực điểm danh */
-#attendance-management {
-    max-height: 300px; /* Giới hạn chiều cao */
-    display: flex;
-    flex-direction: column;
+input[type="text"], input[type="number"], select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    font-family: var(--font-family);
 }
-#attendance-list {
-    overflow-y: auto; /* Thêm thanh cuộn nếu danh sách dài */
-    padding-right: 10px;
+input[type="file"][hidden] {
+    display: none;
 }
-.attendance-player {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    transition: background-color 0.2s;
+hr {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 1.5rem 0;
 }
-.attendance-player:hover {
+
+/* === BẢNG DỮ LIỆU (TABLE) === */
+.table-container {
+    overflow-x: auto;
+}
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.data-table th, .data-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+}
+.data-table thead th {
+    background-color: var(--color-light);
+    font-weight: 700;
+}
+.data-table tbody tr:hover {
     background-color: #f1f3f5;
 }
-.attendance-player input[type="checkbox"] {
-    transform: scale(1.2); /* Làm checkbox to hơn chút */
-    cursor: pointer;
+.data-table td .status-icon {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
 }
-.attendance-player label {
-    cursor: pointer;
-    flex-grow: 1;
+.status-active { background-color: var(--color-success); }
+.status-inactive { background-color: var(--color-secondary); }
+.data-table .delete-player-btn {
+    background: none; border: none; font-size: 1.2rem; cursor: pointer; color: var(--color-secondary);
 }
-
-/* Bảng biểu */
-table { width: 100%; border-collapse: collapse; }
-th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--border-color); }
-thead th { background-color: #f8f9fa; font-weight: 600; }
-tbody tr:hover { background-color: #f1f3f5; }
-
-/* Trạng thái & Trình độ */
-.status-icon { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
-.status-active { background-color: var(--green); }
-.status-inactive { background-color: var(--red); }
-.status-resting { background-color: var(--yellow); }
-.status-playing { background-color: var(--blue); }
-.level-cell { font-weight: bold; text-align: center; font-size: 1.1rem; }
-
-/* Form thêm người chơi */
-#add-player-form { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
-#add-player-form input[type="text"] { flex-grow: 1; }
-#add-player-form input[type="number"] { width: 70px; }
-#add-player-form button { padding: 0.5rem 1rem; background-color: var(--primary-color); }
-#add-player-form button:hover { background-color: #0069d9; }
-
-/* Các thành phần tương tác */
-.clickable { cursor: pointer; user-select: none; transition: background-color 0.2s; }
-.clickable:hover { background-color: #e9ecef; }
-button, .button-like-label { background-color: var(--green); color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 5px; cursor: pointer; font-size: 1rem; font-weight: 500; transition: background-color 0.2s; text-align: center; display: block; margin-bottom: 0.5rem;}
-button:hover, .button-like-label:hover { background-color: #218838; }
-button:disabled, button:disabled:hover { background-color: #ccc; cursor: not-allowed; }
-.delete-player-btn { background: none; border: none; color: var(--red); font-size: 1.2rem; padding: 0 0.5rem; margin-bottom: 0; }
-.delete-player-btn:hover { color: #a51825; background: none; }
-#confirm-match-btn { margin-top: 1rem; width: 100%;}
-#clear-data-btn {
-    background-color: var(--red);
-    width: 100%;
-}
-#clear-data-btn:hover {
-    background-color: #c82333;
-}
-#export-data-btn {
-    background-color: var(--secondary-color);
-    width: 100%;
-}
-#export-data-btn:hover {
-    background-color: #5a6268;
-}
-.button-like-label {
-    background-color: var(--blue);
-    width: 100%;
-    box-sizing: border-box;
-}
-.button-like-label:hover {
-    background-color: #0069d9;
-}
+.data-table .delete-player-btn:hover { color: var(--color-danger); }
+.data-table td.clickable { cursor: pointer; }
 
 
-/* Khu vực sân đấu */
-.courts-container { display: flex; flex-direction: column; gap: 1rem; margin: 1rem 0; }
-.court { position: relative; border: 1px solid var(--border-color); border-radius: 5px; padding: 1rem; padding-top: 2rem; }
-.court h3 { margin-top: 0; font-size: 1.1rem; }
-.court ul { list-style-type: none; padding-left: 0; margin: 0.5rem 0; }
-.timer { font-size: 1.5rem; font-weight: bold; color: var(--green); text-align: center; margin-bottom: 0.5rem; }
-.finish-match-btn { width: 100%; margin-top: 1rem; background-color: var(--red); }
-.finish-match-btn:hover { background-color: #c82333; }
-.delete-court-btn { position: absolute; top: 5px; right: 5px; background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 50%; width: 24px; height: 24px; line-height: 24px; text-align: center; padding: 0; font-weight: bold; cursor: pointer; }
-.delete-court-btn:hover { background: #f1b0b7; }
-
-/* Cấu hình */
-#configuration form { display: flex; flex-direction: column; gap: 1rem;}
-#configuration label { font-weight: 500; }
-.form-group { margin-bottom: 0; }
-.form-group label { display: block; margin-bottom: 0.5rem; }
-.form-group input, .form-group select { width: 100%; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; }
-hr { border: none; border-top: 1px solid #eee; margin: 1rem 0; width: 100%;}
-#add-court-btn { width: 100%; background-color: var(--secondary-color); }
-#add-court-btn:hover { background-color: #5a6268; }
-
-/* Hiển thị các cặp đấu */
-.teams {
+/* === KHU VỰC SÂN ĐẤU (COURTS) === */
+.courts-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+}
+.court {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    background-color: #fdfdfd;
+}
+.court h3 {
+    text-align: center;
+    font-size: 1.1rem;
+    color: var(--color-dark);
+    margin-bottom: 1rem;
+}
+.court .teams {
     display: flex;
     justify-content: center;
     align-items: center;
     text-align: center;
     gap: 0.5rem;
 }
-
-.team {
+.court .team {
     flex: 1;
     padding: 0.5rem;
-    background-color: #f8f9fa;
+    background-color: var(--color-light);
     border-radius: 4px;
 }
-
-.vs-divider {
-    font-weight: bold;
-    color: var(--red);
-}
-
-/* Form checkbox */
-.form-group-checkbox {
+.court .vs-divider { font-weight: bold; color: var(--color-danger); }
+.court .timer { font-size: 1.5rem; font-weight: bold; color: var(--color-success); text-align: center; margin-bottom: 0.5rem; }
+.court .finish-match-btn { width: 100%; margin-top: 1rem; }
+.team-drop-zone {
+    border: 2px dashed var(--color-border);
+    min-height: 40px;
+    border-radius: 4px;
+    padding: 0.5rem;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 0;
-}
-.form-group-checkbox label {
-    margin-bottom: 0;
-}
-.form-group-checkbox input[type="checkbox"] {
-    width: auto;
-}
-
-
-/* --- ĐỊNH DẠNG CHO CHỈNH SỬA TRỰC TIẾP --- */
-
-/* Làm cho ô có thể chỉnh sửa trông giống như có thể click vào */
-.editable-cell {
-    cursor: pointer;
-    transition: background-color 0.2s;
-    border-radius: 4px;
-    padding: 0.5rem;
-}
-
-.editable-cell:hover {
-    background-color: #e9ecef;
-}
-
-/* Định dạng khi người dùng đang chỉnh sửa ô */
-.editable-cell:focus {
-    background-color: white;
-    outline: 2px solid var(--primary-color);
-    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
-}
-
-
-/* --- ĐỊNH DẠNG CHO KÉO THẢ (DRAG & DROP) --- */
-
-/* Hiệu ứng cho người chơi đang được kéo đi */
-.sortable-ghost {
-    opacity: 0.4;
-    background-color: #c8ebfb;
-}
-
-/* Hiệu ứng cho người chơi được chọn để kéo */
-.sortable-chosen {
-    background-color: #cce5ff;
-}
-
-/* Hiệu ứng cho vùng có thể thả vào khi kéo một người chơi qua */
-.court.sortable-ghost {
-    border-style: dashed;
-    border-color: var(--primary-color);
-}
-
-.team-drop-zone {
-    border: 2px dashed #ccc;
-    min-height: 40px; /* Đảm bảo vùng thả có chiều cao tối thiểu */
-    border-radius: 4px;
-    padding: 0.5rem;
-    transition: background-color 0.2s, border-color 0.2s;
-}
-
-/* Khi kéo người chơi qua vùng thả */
-.team-drop-zone.sortable-over {
-    background-color: #e8f5e9; /* Màu xanh lá cây nhạt */
-    border-color: var(--green);
-}
-
-/* Xóa viền khi vùng thả đã có người */
-.team-drop-zone.has-players {
-    border: none;
-    min-height: auto;
-    padding: 0;
+    justify-content: center;
+    color: var(--color-secondary);
 }

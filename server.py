@@ -4,6 +4,16 @@ import os
 import itertools 
 from datetime import datetime
 
+
+SCALING_FACTOR = 400
+ELO_BASE = 10
+
+# --- Hằng số cho thuật toán gợi ý trận đấu ---
+REST_PRIORITY_WEIGHT = 0.01
+LOW_GAMES_PENALTY_WEIGHT = 0.1
+REMATCH_PENALTY_WEIGHT = 10
+
+
 # --- Cấu hình và Khởi tạo Ứng dụng ---
 app = Flask(__name__,
             static_folder='static',
@@ -36,7 +46,7 @@ def home():
 #                CÁC HÀM LOGIC TÍNH TOÁN
 # =====================================================
 
-def _calculate_elo_change(player_a1_elo, player_a2_elo, player_b1_elo, player_b2_elo, result, k_factor=32):
+def _calculate_elo_change(player_a1_elo, player_a2_elo, player_b1_elo, player_b2_elo, result, k_factor):
     """
     Tính toán sự thay đổi ELO cho Đội A.
     - result: 1 nếu Đội A thắng, 0 nếu Đội A thua.
@@ -44,12 +54,24 @@ def _calculate_elo_change(player_a1_elo, player_a2_elo, player_b1_elo, player_b2
     elo_team_a = (player_a1_elo + player_a2_elo) / 2
     elo_team_b = (player_b1_elo + player_b2_elo) / 2
 
-    # Tính toán kết quả kỳ vọng cho Đội A
-    expected_a = 1 / (1 + 10**((elo_team_b - elo_team_a) / 400))
+    expected_a = 1 / (1 + ELO_BASE**((elo_team_b - elo_team_a) / SCALING_FACTOR))
 
     # Tính toán lượng ELO thay đổi
     elo_change = k_factor * (result - expected_a)
     return elo_change
+
+def _get_dynamic_k_factor(player):
+    """
+    Lấy K-Factor dựa trên số trận đã chơi của người chơi.
+    - player: một dictionary chứa thông tin người chơi, bao gồm 'total_matches_played'.
+    """
+    matches_played = player.get('total_matches_played', 0)
+    if matches_played < 20:
+        return 48  # K-factor cao cho người chơi mới (< 20 trận)
+    elif matches_played < 50:
+        return 32  # K-factor trung bình cho người chơi đang phát triển
+    else:
+        return 24  # K-factor thấp cho người chơi đã có thứ hạng ổn định
 
 def _find_best_pairing_for_group(group_of_4):
     """
@@ -120,14 +142,14 @@ def _suggest_matches(active_players, empty_courts, rules):
             # Vì vậy, ta lấy số nghịch đảo và nhân với một hệ số để nó có ảnh hưởng.
             # Tránh chia cho 0.
             if total_rest_time > 0:
-                score -= (total_rest_time / 4) * 0.01 # Hệ số 0.01 để điều chỉnh "sức mạnh" của quy tắc
+                score -= (total_rest_time / 4) * REST_PRIORITY_WEIGHT
 
         # --- Quy tắc 2: Ưu tiên người chơi ít nhất ---
         if rules.get('prioritize_low_games'):
             total_games = sum(p['total_matches_played'] for p in group)
             # Thêm điểm phạt nếu nhóm này đã chơi quá nhiều.
             # Mỗi trận đã chơi sẽ tăng điểm số (làm nó tệ đi) một chút.
-            score += total_games * 0.1 # Hệ số 0.1 để điều chỉnh
+            score += total_games * LOW_GAMES_PENALTY_WEIGHT
 
         # --- Quy tắc 3: Ưu tiên cặp đôi mới ---
         if rules.get('avoid_rematch'):
@@ -136,7 +158,7 @@ def _suggest_matches(active_players, empty_courts, rules):
             # team_a, team_b = pairing
             # pair1_history = get_pair_history(team_a[0]['id'], team_a[1]['id'])
             # pair2_history = get_pair_history(team_b[0]['id'], team_b[1]['id'])
-            # score += (pair1_history + pair2_history) * 10 # Phạt nặng các cặp đã chơi cùng nhau
+            # score += (pair1_history + pair2_history) * REMATCH_PENALTY_WEIGHT
             pass # Tạm thời bỏ qua để đơn giản hóa
 
         scored_groups.append({'score': score, 'pairing': pairing})
@@ -310,6 +332,8 @@ def delete_court(court_id):
     # Thêm logic kiểm tra xem sân có đang được sử dụng không trước khi xóa (nếu cần)
     # Ví dụ: SELECT * FROM matches WHERE court_id = ? AND status = 'ongoing'
     
+    
+
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('DELETE FROM courts WHERE id = ?', (court_id,))
@@ -436,16 +460,16 @@ def finish_match(match_id):
         team_a_players = [p for p in players if p['team'] == 'A']
         team_b_players = [p for p in players if p['team'] == 'B']
 
-        # 2. Tính toán sự thay đổi ELO
+        # 2. Tính toán kết quả kỳ vọng
         result_for_a = 1 if winning_team == 'A' else 0
-        elo_change = _calculate_elo_change(
-            team_a_players[0]['elo_rating'], team_a_players[1]['elo_rating'],
-            team_b_players[0]['elo_rating'], team_b_players[1]['elo_rating'],
-            result_for_a
-        )
+        elo_team_a = (team_a_players[0]['elo_rating'] + team_a_players[1]['elo_rating']) / 2
+        elo_team_b = (team_b_players[0]['elo_rating'] + team_b_players[1]['elo_rating']) / 2
+        expected_a = 1 / (1 + ELO_BASE**((elo_team_b - elo_team_a) / SCALING_FACTOR))
 
         # 3. Cập nhật ELO và các chỉ số cho từng người chơi
         for p in team_a_players:
+            k_factor = _get_dynamic_k_factor(p)
+            elo_change = k_factor * (result_for_a - expected_a)
             new_elo = p['elo_rating'] + elo_change
             new_wins = p['total_wins'] + 1 if winning_team == 'A' else p['total_wins']
             cursor.execute(
@@ -455,7 +479,11 @@ def finish_match(match_id):
             cursor.execute('UPDATE match_players SET elo_after = ? WHERE match_id = ? AND player_id = ?', (new_elo, match_id, p['id']))
 
         for p in team_b_players:
-            new_elo = p['elo_rating'] - elo_change # Đội B thay đổi ngược lại với Đội A
+            k_factor = _get_dynamic_k_factor(p)
+            # Đội B thay đổi ngược lại với Đội A, nên ta dùng ( (1-result_for_a) - (1-expected_a) )
+            # tương đương với -(result_for_a - expected_a)
+            elo_change = k_factor * (result_for_a - expected_a)
+            new_elo = p['elo_rating'] - elo_change
             new_wins = p['total_wins'] + 1 if winning_team == 'B' else p['total_wins']
             cursor.execute(
                 'UPDATE players SET elo_rating = ?, total_matches_played = ?, total_wins = ?, last_played_date = CURRENT_TIMESTAMP WHERE id = ?',
@@ -477,32 +505,109 @@ def finish_match(match_id):
         return jsonify({'error': f'Lỗi database: {e}'}), 500
     finally:
         conn.close()
-        
+
 @app.route('/api/matches/ongoing', methods=['GET'])
 def get_ongoing_matches():
     """Lấy danh sách các trận đang diễn ra và người chơi trong đó."""
+    query = """
+        SELECT 
+            m.id as match_id, 
+            m.court_id, 
+            c.name as court_name,
+            p.id as player_id, 
+            p.name as player_name, 
+            mp.team, 
+            mp.elo_before
+        FROM matches m
+        JOIN courts c ON m.court_id = c.id
+        JOIN match_players mp ON m.id = mp.match_id
+        JOIN players p ON mp.player_id = p.id
+        WHERE m.status = 'ongoing'
+        ORDER BY m.id, mp.team;
+    """
     conn = get_db_connection()
-    matches = conn.execute("SELECT id, court_id FROM matches WHERE status = 'ongoing'").fetchall()
+    rows = conn.execute(query).fetchall()
     
-    results = []
-    for match in matches:
-        match_dict = dict(match)
-        players = conn.execute(
-            "SELECT p.id, p.name, mp.team, mp.elo_before "
-            "FROM players p JOIN match_players mp ON p.id = mp.player_id "
-            "WHERE mp.match_id = ?",
-            (match['id'],)
-        ).fetchall()
+    matches_dict = {}
+    for row in rows:
+        match_id = row['match_id']
+        if match_id not in matches_dict:
+            matches_dict[match_id] = {'id': match_id, 'court_id': row['court_id'], 'court_name': row['court_name'], 'team_A': [], 'team_B': []}
         
-        match_dict['team_A'] = [dict(p) for p in players if p['team'] == 'A']
-        match_dict['team_B'] = [dict(p) for p in players if p['team'] == 'B']
-        results.append(match_dict)
+        player_info = {'id': row['player_id'], 'name': row['player_name'], 'elo_before': row['elo_before']}
+        if row['team'] == 'A':
+            matches_dict[match_id]['team_A'].append(player_info)
+        else:
+            matches_dict[match_id]['team_B'].append(player_info)
         
     conn.close()
-    return jsonify(results)
+    return jsonify(list(matches_dict.values()))
 
 
 
+@app.route('/api/matches/create', methods=['POST'])
+def create_match():
+    """
+    API để tạo một trận đấu mới từ một danh sách 4 người chơi và một sân.
+    Backend sẽ tự động chia cặp cân bằng nhất.
+    """
+    data = request.get_json()
+    court_id = data.get('court_id')
+    player_ids = data.get('player_ids')
+
+    # --- Kiểm tra dữ liệu đầu vào ---
+    if not all([court_id, player_ids]) or len(player_ids) != 4:
+        return jsonify({'error': 'Dữ liệu không hợp lệ: Cần court_id và đúng 4 player_ids'}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # 1. Lấy thông tin đầy đủ của 4 người chơi từ DB
+        # Dùng '?' để tránh SQL Injection
+        placeholders = ','.join('?' for _ in player_ids)
+        query = f'SELECT * FROM players WHERE id IN ({placeholders})'
+        players_from_db = cursor.execute(query, player_ids).fetchall()
+
+        if len(players_from_db) != 4:
+            return jsonify({'error': 'Một hoặc nhiều ID người chơi không tồn tại'}), 404
+            
+        # Chuyển đổi thành list các dictionary để xử lý
+        group_of_4 = [dict(p) for p in players_from_db]
+
+        # 2. Tìm cách chia cặp cân bằng nhất bằng hàm đã có
+        (team_a, team_b), elo_diff = _find_best_pairing_for_group(group_of_4)
+
+        # 3. Tạo một trận đấu mới trong bảng `matches`
+        cursor.execute("INSERT INTO matches (court_id, status) VALUES (?, 'ongoing')", (court_id,))
+        match_id = cursor.lastrowid
+
+        # 4. Thêm 4 người chơi vào bảng `match_players` với đội đã được chia
+        players_in_match = []
+        for player in team_a:
+            players_in_match.append((match_id, player['id'], 'A', player['elo_rating']))
+        for player in team_b:
+            players_in_match.append((match_id, player['id'], 'B', player['elo_rating']))
+        
+        cursor.executemany(
+            "INSERT INTO match_players (match_id, player_id, team, elo_before) VALUES (?, ?, ?, ?)",
+            players_in_match
+        )
+
+        conn.commit()
+        return jsonify({
+            'message': f'Trận đấu đã bắt đầu trên sân {court_id}!', 
+            'match_id': match_id,
+            'team_A': team_a,
+            'team_B': team_b,
+            'elo_difference': elo_diff
+        }), 201
+
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'error': f'Lỗi database: {e}'}), 500
+    finally:
+        conn.close()
 
 
 
