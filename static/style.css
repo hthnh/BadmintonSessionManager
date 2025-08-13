@@ -1,14 +1,16 @@
-/* style.css (Phiên bản có Sidebar thu gọn) */
+/* style.css (Phiên bản Tái cấu trúc và Tối ưu) */
+
+/* === BIẾN TOÀN CỤC VÀ THIẾT LẬP CƠ BẢN === */
 :root {
     --color-primary: #0d6efd;
     --color-primary-dark: #0b5ed7;
     --color-secondary: #6c757d;
     --color-dark: #212529;
+    --color-light: #f8f9fa; /* Thêm màu sáng cho dễ dùng */
     --color-background: #f0f2f5;
     --color-surface: #ffffff;
     --color-border: #dee2e6;
     
-    /* [THAY ĐỔI] Định nghĩa chiều rộng cho cả 2 trạng thái của sidebar */
     --sidebar-width-expanded: 240px;
     --sidebar-width-collapsed: 80px;
 
@@ -17,7 +19,12 @@
     --box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
     --transition-speed: 0.3s;
 }
-* { box-sizing: border-box; margin: 0; padding: 0; }
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
 body {
     font-family: var(--font-family);
@@ -34,40 +41,47 @@ body {
 
 /* === SIDEBAR === */
 .sidebar {
-    /* [THAY ĐỔI] Trạng thái mặc định là thu gọn */
-    width: var(--sidebar-width-collapsed);
+    width: var(--sidebar-width-collapsed); /* Trạng thái mặc định là thu gọn */
     background-color: var(--color-dark);
     color: var(--color-light);
     display: flex;
     flex-direction: column;
-    padding: 1.5rem 0;
     flex-shrink: 0;
-    overflow-x: hidden; /* Ẩn nội dung bị tràn ra ngoài */
-    transition: width var(--transition-speed) ease; /* Hiệu ứng co giãn */
+    overflow-x: hidden;
+    transition: width var(--transition-speed) ease;
 }
 
-/* Khi hover vào sidebar, nó sẽ mở rộng ra */
 .sidebar:hover {
-    width: var(--sidebar-width-expanded);
+    width: var(--sidebar-width-expanded); /* Mở rộng khi di chuột vào */
 }
 
+/* --- Sidebar Header --- */
 .sidebar__header {
     text-align: center;
     font-size: 1.8rem;
     font-weight: 700;
     margin-bottom: 2rem;
-    padding: 0 1.5rem; /* Căn lề cho icon khi thu gọn */
-    white-space: nowrap; /* Ngăn text logo bị xuống dòng */
+    padding: 0 1.5rem;
+    white-space: nowrap;
 }
+
+.sidebar__header h4 {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #00f9ff;
+}
+
 .sidebar__logo-text {
-    opacity: 0; /* Ẩn text logo khi thu gọn */
+    opacity: 0; /* Mặc định ẩn text */
     transition: opacity var(--transition-speed) ease;
 }
+
 .sidebar:hover .sidebar__logo-text {
-    opacity: 1; /* Hiện text logo khi mở rộng */
+    opacity: 1; /* Hiện text khi sidebar mở rộng */
 }
 
-
+/* --- Sidebar Navigation --- */
 .sidebar__nav {
     display: flex;
     flex-direction: column;
@@ -84,43 +98,48 @@ body {
     border-radius: var(--border-radius);
     color: #adb5bd;
     text-decoration: none;
-    transition: background-color 0.2s;
-    white-space: nowrap; /* Ngăn text bị xuống dòng */
+    transition: background-color 0.2s, color 0.2s;
+    white-space: nowrap;
 }
 
 .nav-item__icon {
     font-size: 1.5rem;
-    min-width: 20px; /* Đảm bảo icon không bị co lại */
+    min-width: 20px;
     text-align: center;
+    transition: color 0.2s; /* Thêm hiệu ứng chuyển màu cho icon */
 }
 
 .nav-item__text {
-    opacity: 0; /* Ẩn text khi thu gọn */
+    opacity: 0; /* Mặc định ẩn text */
     transition: opacity var(--transition-speed) ease;
 }
-/* Khi sidebar mở rộng, hiện text ra */
+
 .sidebar:hover .nav-item__text {
-    opacity: 1;
+    opacity: 1; /* Hiện text khi sidebar mở rộng */
 }
 
-.nav-item:hover {
+.nav-item:hover, .nav-item.active {
     background-color: rgba(255, 255, 255, 0.1);
     color: white;
 }
+
 .nav-item.active {
     background-color: var(--color-primary);
-    color: white;
 }
 
+/* --- Sidebar Footer --- */
 .sidebar__footer {
     padding: 1rem 1.5rem 0 1.5rem;
     border-top: 1px solid #495057;
     white-space: nowrap;
 }
+
 .sidebar__footer .clock {
+    color: #adb5bd;
     opacity: 0;
     transition: opacity var(--transition-speed) ease;
 }
+
 .sidebar:hover .sidebar__footer .clock {
     opacity: 1;
 }
@@ -132,8 +151,8 @@ body {
     flex-direction: column;
     height: 100vh;
     overflow-y: hidden;
-    /* [THAY ĐỔI] Không cần transition ở đây nữa */
 }
+
 .main-content__header {
     display: flex;
     justify-content: space-between;
@@ -143,79 +162,138 @@ body {
     border-bottom: 1px solid var(--color-border);
     flex-shrink: 0;
 }
+
 .main-content__header h1 {
     font-size: 1.5rem;
 }
 
 .main-grid-container {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 cột cho trang chính */
+    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
     padding: 1.5rem;
     flex-grow: 1;
     overflow-y: auto;
 }
 
-/* Ví dụ: Tăng khoảng cách lên */
 .grid-column {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem; /* Tăng giá trị từ 1.5rem lên 2.5rem */
+    gap: 1.5rem;
 }
-/* Bố cục cho trang settings chỉ có 1 cột */
+
 .main-grid-container--single-column {
     grid-template-columns: 1fr;
 }
 
-/* Thêm đoạn này vào cuối file style.css */
+/* === CÁC THÀNH PHẦN UI (CARD, BUTTON, FORM, TABLE) === */
+
+/* --- Card --- */
+.card {
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 1.5rem;
+}
 
 .card__header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 1rem; /* Tạo khoảng cách với nội dung bên dưới */
+    margin-bottom: 1rem;
+}
+
+.card__title {
+    font-size: 1.25rem;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
 }
 
 .card__header .card__title {
-    margin-bottom: 0; /* Bỏ margin mặc định của tiêu đề */
-    border-bottom: none; /* Bỏ đường gạch chân của tiêu đề */
+    margin-bottom: 0; /* Ghi đè chỉ khi title nằm trong header */
+    border-bottom: none;
 }
 
-
-/* === CARD, LISTS, BUTTONS, FORMS (Giữ nguyên) === */
-.card { background-color: var(--color-surface); border-radius: var(--border-radius); box-shadow: var(--box-shadow); padding: 1.5rem; }
-.card__title { font-size: 1.25rem; color: var(--color-primary); margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--color-border); }
-.list-container { display: flex; flex-direction: column; gap: 1rem; }
-.list-container--scrollable { max-height: 50vh; overflow-y: auto; padding-right: 5px; }
-.list-item-placeholder { color: var(--color-secondary); text-align: center; padding: 2rem; border: 2px dashed var(--color-border); border-radius: var(--border-radius); }
-.button { border: none; border-radius: var(--border-radius); padding: 0.6rem 1.2rem; font-family: var(--font-family); font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; text-decoration: none; }
-.button--primary { background-color: var(--color-primary); color: white; }
-.button--primary:hover { background-color: var(--color-primary-dark); }
-.player-form { display: grid; grid-template-columns: 1fr auto auto auto auto; gap: 0.5rem; margin-bottom: 1rem; }
-.table-container { overflow-x: auto; }
-.data-table { width: 100%; border-collapse: collapse; }
-.data-table th, .data-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid var(--color-border); vertical-align: middle; }
-hr { border: none; border-top: 1px solid var(--color-border); margin: 1.5rem 0; }
-input, select { width: 100%; padding: 0.5rem; border: 1px solid var(--color-border); border-radius: var(--border-radius); }
-
-
-
-.sidebar__header h4 {
-    display: flex; /* Căn chỉnh icon và text dễ hơn */
-    align-items: center;
-    justify-content: center; /* Căn giữa khi thu gọn */
-    color: #00f9ff; /* Áp dụng màu sáng cho cả hai */
-}
-.sidebar__footer .clock {
-    color: #adb5bd; /* Đặt màu chữ sáng hơn cho đồng hồ */
+/* --- List --- */
+.list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-/* Khi sidebar thu gọn, giữ màu cho icon */
-.sidebar .nav-item__icon {
-    color: #adb5bd;
+.list-container--scrollable {
+    max-height: 50vh;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
-.sidebar .nav-item:hover .nav-item__icon,
-.sidebar .nav-item.active .nav-item__icon {
-    color: white; /* Đảm bảo icon cũng đổi màu khi hover hoặc active */
+.list-item-placeholder {
+    color: var(--color-secondary);
+    text-align: center;
+    padding: 2rem;
+    border: 2px dashed var(--color-border);
+    border-radius: var(--border-radius);
+}
+
+/* --- Button --- */
+.button {
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 0.6rem 1.2rem;
+    font-family: var(--font-family);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    text-decoration: none;
+}
+
+.button--primary {
+    background-color: var(--color-primary);
+    color: white;
+}
+
+.button--primary:hover {
+    background-color: var(--color-primary-dark);
+}
+
+/* --- Form & Table --- */
+.player-form {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.table-container {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+}
+
+hr {
+    border: none;
+    border-top: 1px solid var(--color-border);
+    margin: 1.5rem 0;
 }

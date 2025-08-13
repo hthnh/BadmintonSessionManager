@@ -4,53 +4,290 @@
     <meta charset="UTF-8">
     <title>Quản lý người chơi - BSM</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        /* CSS cho layout chính (giữ nguyên) */
+        .player-grid-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+        .player-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            transition: box-shadow 0.2s;
+        }
+        .player-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .player-info { display: flex; align-items: center; gap: 1rem; }
+        .player-avatar {
+            width: 50px;
+            height: 50px;
+            background-color: var(--color-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .player-details h5 { margin: 0; font-size: 1.1rem; }
+        .player-details p { margin: 0; color: var(--color-secondary); }
+        .player-actions button { margin-left: 0.5rem; }
+        .form-card { position: sticky; top: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+
+        /* [MỚI] CSS cho Modal chi tiết người chơi */
+        .modal {
+            display: none; /* Mặc định ẩn */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6); /* Lớp nền mờ */
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation-name: animatetop;
+            animation-duration: 0.4s
+        }
+        @keyframes animatetop {
+            from {top: -300px; opacity: 0}
+            to {top: 0; opacity: 1}
+        }
+        .modal-header {
+            padding: 2px 16px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h2 {
+            color: var(--color-primary);
+        }
+        .close-btn {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-btn:hover, .close-btn:focus {
+            color: black;
+        }
+        .modal-body {
+            padding: 1.5rem 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Chia thông tin làm 2 cột */
+            gap: 1rem 2rem;
+        }
+        .info-field {
+            padding-bottom: 10px;
+        }
+        .info-field label {
+            color: var(--color-secondary);
+            font-weight: 500;
+            display: block;
+            font-size: 0.9rem;
+        }
+        .info-field span {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        /* [MỚI] CSS cho phần cài đặt nâng cao trong form */
+        .advanced-settings {
+            display: none; /* Mặc định ẩn */
+            border-top: 1px solid var(--color-border);
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .toggle-advanced {
+            color: var(--color-primary);
+            cursor: pointer;
+            font-weight: 700;
+            text-align: right;
+            margin-top: 1rem;
+        }
+    </style>
 </head>
 <body>
     <div class="page-container">
-         <aside class="sidebar">
-            <div class="sidebar__header">
-                <h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4>
-            </div>
+        <aside class="sidebar">
+            <div class="sidebar__header"><h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4></div>
             <nav class="sidebar__nav">
                 <a href="/" class="nav-item">
-                    <span class="nav-item__icon">📊</span>
-                    <span class="nav-item__text">Dashboard</span>
+                    <span class="nav-item__icon">📊</span><span class="nav-item__text">Dashboard</span>
                 </a>
-
-                <a href="/manage-players" class="nav-item">
-                    <span class="nav-item__icon">✅</span>
-                    <span class="nav-item__text">Player Manage</span>
+                <a href="/manage-players" class="nav-item active">
+                    <span class="nav-item__icon">✅</span><span class="nav-item__text">Player Manage</span>
                 </a>
-
                 <a href="/manage-courts" class="nav-item">
-                    <span class="nav-item__icon">🏟️</span>
-                    <span class="nav-item__text">Courts Manage</span>
+                    <span class="nav-item__icon">🏟️</span><span class="nav-item__text">Courts Manage</span>
                 </a>
-                
                 <a href="/history" class="nav-item">
-                    <span class="nav-item__icon">📄</span>
-                    <span class="nav-item__text">History</span>
+                    <span class="nav-item__icon">📄</span><span class="nav-item__text">History</span>
                 </a>
-
                 <a href="/settings" class="nav-item">
-                    <span class="nav-item__icon">⚙️</span>
-                    <span class="nav-item__text">Settings</span>
+                    <span class="nav-item__icon">⚙️</span><span class="nav-item__text">Settings</span>
                 </a>
             </nav>
-            <div class="sidebar__footer">
-                <div id="clock" class="clock">Đang tải...</div>
-            </div>
+            <div class="sidebar__footer"><div id="clock" class="clock">Đang tải...</div></div>
         </aside>
+
         <main class="main-content">
-            <header class="main-content__header">
-                <h1>Điểm danh người chơi</h1>
-            </header>
-            <div class="main-grid-container main-grid-container--single-column">
+            <header class="main-content__header"><h1>Quản lý Người chơi</h1></header>
+            
+            <div class="main-grid-container player-grid-container">
                 <section class="card">
-                    <h2 class="card__title">Danh sách người chơi</h2>
-                    </section>
+                    <div class="card__header"><h2 class="card__title">Danh sách người chơi</h2></div>
+                    <div id="player-list-container" class="list-container list-container--scrollable">
+                        <div class="player-card" data-player-id="1"> <div class="player-info">
+                                <div class="player-avatar">H</div>
+                                <div class="player-details">
+                                    <h5>Hảo Hảo</h5>
+                                    <p>SĐT: 0909123456 - ELO: 1500</p> 
+                                </div>
+                            </div>
+                            <div class="player-actions">
+                                <button class="button button--secondary detail-btn">Chi tiết</button> 
+                                <button class="button button--secondary edit-btn">Sửa</button>
+                                <button class="button button--danger delete-btn">Xóa</button>
+                            </div>
+                        </div>
+                        </div>
+                </section>
+                <section class="form-card">
+                    <div class="card">
+                        <h2 class="card__title" id="form-title">Thêm người chơi mới</h2>
+                        <form id="player-form">
+                            <input type="hidden" id="player-id-input">
+                            
+                            <div class="form-group">
+                                <label for="player-name-input">Tên người chơi</label>
+                                <input type="text" id="player-name-input" placeholder="Nhập tên..." required>
+                            </div>
+                            <div class="form-group">
+                                <label for="player-contact-input">Số điện thoại</label>
+                                <input type="tel" id="player-contact-input" placeholder="Nhập SĐT...">
+                            </div>
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="player-type-input">Loại hình</label>
+                                    <select id="player-type-input">
+                                        <option value="Vãng lai">Vãng lai</option>
+                                        <option value="Cố định">Cố định</option>
+                                        <option value="Khách">Khách</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="player-gender-input">Giới tính</label>
+                                    <select id="player-gender-input">
+                                        <option value="Nam">Nam</option>
+                                        <option value="Nữ">Nữ</option>
+                                        <option value="Khác">Khác</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="toggle-advanced" id="toggle-advanced-btn">
+                                <span>Thiết lập nâng cao ⚙️</span>
+                            </div>
+
+                            <div class="advanced-settings" id="advanced-settings-container">
+                                <hr>
+                                <h4>Thông số hệ thống (chỉ sửa khi cần thiết)</h4>
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="player-elo-input">Điểm ELO</label>
+                                        <input type="number" step="0.01" id="player-elo-input">
+                                    </div>
+                                     <div class="form-group">
+                                        <label for="player-k-factor-input">Hệ số K</label>
+                                        <input type="number" id="player-k-factor-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="player-provisional-input">Trận "thử việc"</label>
+                                        <input type="number" id="player-provisional-input">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="player-rank-tier-input">Hạng</label>
+                                        <input type="text" id="player-rank-tier-input" placeholder="Đồng, Bạc, Vàng...">
+                                    </div>
+                                </div>
+                                </div>
+                            
+                            <button type="submit" class="button button--primary" style="width: 100%; margin-top: 1.5rem;">Lưu thay đổi</button>
+                        </form>
+                    </div>
+                </section>
             </div>
         </main>
     </div>
-    </body>
+
+    <div id="player-detail-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-player-name">Chi tiết người chơi</h2>
+                <span class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="info-field"><label>ID</label><span id="detail-id"></span></div>
+                <div class="info-field"><label>Tên</label><span id="detail-name"></span></div>
+                <div class="info-field"><label>Ngày tham gia</label><span id="detail-join_date"></span></div>
+                <div class="info-field"><label>Loại hình</label><span id="detail-type"></span></div>
+                <div class="info-field"><label>Giới tính</label><span id="detail-gender"></span></div>
+                <div class="info-field"><label>Số điện thoại</label><span id="detail-contact_info"></span></div>
+                <div class="info-field"><label>Trạng thái</label><span id="detail-is_active"></span></div>
+                <hr style="grid-column: 1 / -1;">
+                <div class="info-field"><label>ELO</label><span id="detail-elo_rating"></span></div>
+                <div class="info-field"><label>Hệ số K</label><span id="detail-k_factor"></span></div>
+                <div class="info-field"><label>Hạng</label><span id="detail-rank_tier"></span></div>
+                <div class="info-field"><label>Số trận "thử việc"</label><span id="detail-provisional_games_left"></span></div>
+                <hr style="grid-column: 1 / -1;">
+                <div class="info-field"><label>Tổng số trận</label><span id="detail-total_matches_played"></span></div>
+                <div class="info-field"><label>Tổng số trận thắng</label><span id="detail-total_wins"></span></div>
+                <div class="info-field"><label>Tỷ lệ thắng</label><span id="detail-win_rate"></span></div>
+                <div class="info-field"><label>Chuỗi thắng hiện tại</label><span id="detail-current_win_streak"></span></div>
+                <div class="info-field"><label>Chuỗi thắng dài nhất</label><span id="detail-longest_win_streak"></span></div>
+                <div class="info-field"><label>Lần chơi cuối</label><span id="detail-last_played_date"></span></div>
+                <div class="info-field"><label>Số buổi đã tham gia</label><span id="detail-total_sessions_attended"></span></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
+</body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
