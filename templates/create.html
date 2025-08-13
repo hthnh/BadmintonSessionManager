@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Xuất báo cáo - BSM</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="page-container">
+         <aside class="sidebar">
+            <div class="sidebar__header">
+                <h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4>
+            </div>
+            <nav class="sidebar__nav">
+                <a href="/" class="nav-item">
+                    <span class="nav-item__icon">📊</span>
+                    <span class="nav-item__text">Dashboard</span>
+                </a>
+
+                <a href="/manage-players" class="nav-item">
+                    <span class="nav-item__icon">✅</span>
+                    <span class="nav-item__text">Player Manage</span>
+                </a>
+
+                <a href="/manage-courts" class="nav-item">
+                    <span class="nav-item__icon">🏟️</span>
+                    <span class="nav-item__text">Courts Manage</span>
+                </a>
+                
+                <a href="/history" class="nav-item">
+                    <span class="nav-item__icon">📄</span>
+                    <span class="nav-item__text">History</span>
+                </a>
+
+                <a href="/settings" class="nav-item">
+                    <span class="nav-item__icon">⚙️</span>
+                    <span class="nav-item__text">Settings</span>
+                </a>
+            </nav>
+            <div class="sidebar__footer">
+                <div id="clock" class="clock">Đang tải...</div>
+            </div>
+        </aside>
+        <main class="main-content">
+            <header class="main-content__header">
+                <h1>Lịch sử & Báo cáo</h1>
+            </header>
+            <div class="main-grid-container main-grid-container--single-column">
+                <section class="card">
+                    <h2 class="card__title">Tùy chọn xuất báo cáo</h2>
+                    </section>
+            </div>
+        </main>
+    </div>
+    </body>
+</html>

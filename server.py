@@ -28,6 +28,30 @@ def home():
     """Phục vụ trang chủ index.html."""
     return render_template('index.html')
 
+@app.route('/settings')
+def settings_page():
+    """Phục vụ trang quản lý settings.html."""
+    return render_template('settings.html')
+
+@app.route('/manage-players')
+def players_page():
+    """Phục vụ trang quản lý players.html."""
+    return render_template('players.html')
+
+@app.route('/manage-courts')
+def courts_page():
+    """Phục vụ trang quản lý admin.html."""
+    return render_template('courts.html')
+
+@app.route('/history')
+def history_page():
+    """Phục vụ trang quản lý admin.html."""
+    return render_template('history.html')
+
+
+
+
+
 
 # --- Chạy ứng dụng ---
 if __name__ == '__main__':
