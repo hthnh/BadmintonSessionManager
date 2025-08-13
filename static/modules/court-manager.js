@@ -1,6 +1,15 @@
-// static/modules/court-manager.js (Đã cập nhật)
+// static/modules/court-manager.js (Đã cập nhật hoàn thiện chức năng)
+
+// Biến lưu trữ các bộ đếm thời gian cho mỗi sân
 const courtTimers = {};
 
+/**
+ * Hàm trợ giúp chung để gọi API
+ * @param {string} url - Đường dẫn API
+ * @param {string} method - Phương thức HTTP (GET, POST, PUT, DELETE)
+ * @param {object|null} body - Dữ liệu gửi đi (nếu có)
+ * @returns {Promise<any>}
+ */
 async function apiCall(url, method = 'GET', body = null) {
     const options = {
         method,
@@ -23,15 +32,13 @@ async function apiCall(url, method = 'GET', body = null) {
     }
 }
 
-// === HÀM RENDER ===
+// === CÁC HÀM RENDER ===
 
 /**
  * Hàm chính để render toàn bộ danh sách sân
  * @param {Array} courts - Danh sách sân từ API
  * @param {Array} ongoingMatches - Danh sách các trận đang diễn ra
  */
-
-
 function renderCourtList(courts, ongoingMatches) {
     const container = document.getElementById('courts-list-container');
     container.innerHTML = '';
@@ -50,18 +57,16 @@ function renderCourtList(courts, ongoingMatches) {
         if (matchOnThisCourt) {
             courtCard.classList.add('status-ongoing');
             courtCard.innerHTML = createOngoingCourtCard(court, matchOnThisCourt);
-            startTimer(court.id, new Date(matchOnThisCourt.start_time));
+            startTimer(matchOnThisCourt.id, new Date(matchOnThisCourt.start_time));
         } else {
             courtCard.classList.add('status-available');
             courtCard.innerHTML = createAvailableCourtCard(court);
-            stopTimer(court.id);
+            // Không cần timer cho sân trống, hàm stopTimer sẽ được gọi nếu trước đó có timer
         }
         
         container.appendChild(courtCard);
     });
 }
-
-
 
 /** Tạo HTML cho card sân đang trống */
 function createAvailableCourtCard(court) {
@@ -72,7 +77,7 @@ function createAvailableCourtCard(court) {
                 <button class="button button--danger delete-court-btn">Xóa</button>
             </div>
         </div>
-        <div class="court-card__body">
+        <div class="court-card__body" style="background-image: none;">
             <div class="court-card__overlay">
                 <div class="court-status">Sẵn sàng</div>
                 <button class="button button--primary assign-match-btn">Tạo trận mới</button>
@@ -84,12 +89,13 @@ function createAvailableCourtCard(court) {
     `;
 }
 
-
-
-/** Tạo HTML cho card sân đang có trận đấu */
+/** Tạo HTML cho card sân đang có trận đấu (Đã cập nhật) */
 function createOngoingCourtCard(court, match) {
     const teamA = match.team_A;
     const teamB = match.team_B;
+    // Dừng timer cũ nếu có để tránh bị trùng lặp
+    stopTimer(match.id); 
+    
     return `
         <div class="court-card__header">
             <h3>${court.name}</h3>
@@ -101,27 +107,21 @@ function createOngoingCourtCard(court, match) {
             <div class="player-slot">${teamB[1].name}</div>
         </div>
         <div class="court-card__footer">
-            <div class="court-timer" id="timer-${court.id}">00:00</div>
-            <div class="court-score">
-                <button class="button score-btn" data-team="A" data-change="-1">-</button>
-                <span id="score-A-${court.id}">0</span>
-                <span>:</span>
-                <span id="score-B-${court.id}">0</span>
-                <button class="button score-btn" data-team="B" data-change="1">+</button>
-            </div>
+            <div class="court-timer" id="timer-${match.id}">00:00</div>
             <div class="court-actions">
-                <button class="button button--secondary pause-btn">Tạm dừng</button>
-                <button class="button button--danger finish-btn">Kết thúc</button>
+                <span>Đội thắng:</span>
+                <button class="button button--secondary finish-match-btn" data-match-id="${match.id}" data-winning-team="A">Đội A</button>
+                <button class="button button--secondary finish-match-btn" data-match-id="${match.id}" data-winning-team="B">Đội B</button>
             </div>
         </div>
     `;
 }
 
+// === CÁC HÀM LOGIC VÀ XỬ LÝ SỰ KIỆN ===
 
-
-// === CÁC HÀM LOGIC ===
-
-
+/**
+ * Tải dữ liệu từ server và render lại giao diện
+ */
 async function fetchAndRenderData() {
     // Sử dụng Promise.all để tải dữ liệu song song, tăng hiệu suất
     const [courts, ongoingMatches] = await Promise.all([
@@ -134,40 +134,75 @@ async function fetchAndRenderData() {
     }
 }
 
+function startTimer(matchId, startTime) {
+    if (courtTimers[matchId]) clearInterval(courtTimers[matchId]);
 
-
-function startTimer(courtId, startTime) {
-    if (courtTimers[courtId]) clearInterval(courtTimers[courtId]);
-
-    const timerElement = document.getElementById(`timer-${courtId}`);
+    const timerElement = document.getElementById(`timer-${matchId}`);
     if (!timerElement) return;
 
-    courtTimers[courtId] = setInterval(() => {
+    courtTimers[matchId] = setInterval(() => {
         const now = new Date();
-        const diff = now - startTime; // Milliseconds
+        const diff = now - startTime; // Lấy chênh lệch thời gian bằng mili giây
+        
+        // 1. Tính toán số phút và giây
         const minutes = Math.floor(diff / 60000);
         const seconds = Math.floor((diff % 60000) / 1000);
+
+        // 2. Định dạng thành MM:SS và hiển thị
         timerElement.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
     }, 1000);
 }
 
-function stopTimer(courtId) {
-    if (courtTimers[courtId]) {
-        clearInterval(courtTimers[courtId]);
-        delete courtTimers[courtId];
+function stopTimer(matchId) {
+    if (courtTimers[matchId]) {
+        clearInterval(courtTimers[matchId]);
+        delete courtTimers[matchId];
     }
 }
 
+/**
+ * Xử lý sự kiện click trên toàn bộ container danh sách sân (Event Delegation)
+ * @param {Event} e - Đối tượng sự kiện
+ */
+async function handleContainerClick(e) {
+    const target = e.target;
+    const courtCard = target.closest('.court-card');
+    if (!courtCard) return;
 
-function handleScoreChange(courtCard, team, change) {
-    const scoreElement = courtCard.querySelector(`#score-${team}-${courtCard.dataset.courtId}`);
-    let currentScore = parseInt(scoreElement.textContent);
-    currentScore += change;
-    if (currentScore < 0) currentScore = 0; // Điểm không thể âm
-    scoreElement.textContent = currentScore;
+    const courtId = courtCard.dataset.courtId;
+
+    // Xử lý nút Xóa sân (khi sân trống)
+    if (target.classList.contains('delete-court-btn')) {
+        const courtName = courtCard.querySelector('h3').textContent;
+        if (confirm(`Bạn có chắc muốn xóa vĩnh viễn sân "${courtName}"?`)) {
+            const result = await apiCall(`/api/courts/${courtId}`, 'DELETE');
+            if (result) {
+                alert(result.message);
+                fetchAndRenderData();
+            }
+        }
+    }
+
+    // [MỚI] Xử lý nút Tạo trận mới (khi sân trống)
+    if (target.classList.contains('assign-match-btn')) {
+        window.location.href = '/create';
+    }
+
+    // [MỚI] Xử lý nút Kết thúc trận đấu (khi sân đang bận)
+    if (target.classList.contains('finish-match-btn')) {
+        const matchId = target.dataset.matchId;
+        const winningTeam = target.dataset.winningTeam;
+        
+        if (confirm(`Xác nhận Đội ${winningTeam} thắng trận này?`)) {
+            const result = await apiCall(`/api/matches/${matchId}/finish`, 'POST', { winning_team: winningTeam });
+            if (result) {
+                alert(result.message);
+                stopTimer(matchId); // Dừng bộ đếm thời gian
+                fetchAndRenderData(); // Tải lại toàn bộ dữ liệu
+            }
+        }
+    }
 }
-
-// === HÀM XỬ LÝ SỰ KIỆN ===
 
 async function handleSaveNewCourt() {
     const nameInput = document.getElementById('court-name-input');
@@ -180,73 +215,11 @@ async function handleSaveNewCourt() {
     const result = await apiCall('/api/courts', 'POST', { name: courtName });
     if (result) {
         alert(result.message || 'Thêm sân thành công!');
-        nameInput.value = ''; // Xóa input
-        document.getElementById('add-court-modal').style.display = 'none'; // Đóng modal
-        fetchAndRenderCourts(); // Tải lại danh sách sân
+        nameInput.value = '';
+        document.getElementById('add-court-modal').style.display = 'none';
+        fetchAndRenderData();
     }
 }
-
-
-
-async function handleContainerClick(e) {
-    const target = e.target;
-    const courtCard = target.closest('.court-card');
-    if (!courtCard) return;
-
-    // Xử lý nút Xóa
-    if (target.classList.contains('delete-court-btn')) {
-        const courtCard = target.closest('.court-card');
-        const courtId = courtCard.dataset.courtId;
-        const courtName = courtCard.querySelector('h3').textContent;
-
-        if (confirm(`Bạn có chắc muốn xóa vĩnh viễn sân "${courtName}"?`)) {
-            const result = await apiCall(`/api/courts/${courtId}`, 'DELETE');
-            if (result) {
-                alert(result.message);
-                fetchAndRenderCourts();
-            }
-        }
-    }
-
-    // Xử lý nút tăng/giảm điểm
-    if (target.classList.contains('score-btn')) {
-        const team = target.dataset.team;
-        const change = parseInt(target.dataset.change);
-        handleScoreChange(courtCard, team, change);
-    }
-    
-    // Xử lý nút Tạm dừng/Tiếp tục
-    if (target.classList.contains('pause-btn')) {
-        const courtId = courtCard.dataset.courtId;
-        if (courtTimers[courtId]) {
-            stopTimer(courtId);
-            target.textContent = 'Tiếp tục';
-            target.classList.remove('pause-btn');
-            target.classList.add('resume-btn');
-        }
-    } else if (target.classList.contains('resume-btn')) {
-        // Chức năng tiếp tục sẽ phức tạp hơn, tạm thời chỉ là UI
-        alert('Chức năng "Tiếp tục" cần logic phức tạp hơn để tính toán lại thời gian. Tạm thời chỉ là giao diện.');
-        target.textContent = 'Tạm dừng';
-        target.classList.remove('resume-btn');
-        target.classList.add('pause-btn');
-    }
-
-
-    // Xử lý nút Kết thúc
-    if (target.classList.contains('finish-btn')) {
-        alert('Chức năng "Kết thúc" sẽ gọi API để lưu điểm và giải phóng sân.');
-        // Logic gọi API finish_match sẽ được thêm vào đây
-    }
-
-    // Xử lý nút Tạo trận mới
-    if (target.classList.contains('assign-match-btn')) {
-        alert('Chức năng "Tạo trận mới" sẽ mở một popup để chọn người chơi.');
-        // Logic mở popup chọn người chơi sẽ ở đây
-    }
-}
-
-
 
 // === HÀM KHỞI TẠO ===
 
@@ -254,9 +227,10 @@ export default function init() {
     // Tải dữ liệu lần đầu
     fetchAndRenderData();
 
+    // Gán sự kiện cho container chính
     document.getElementById('courts-list-container').addEventListener('click', handleContainerClick);
     
-    // Gán sự kiện cho modal
+    // Gán sự kiện cho modal thêm sân mới
     const modal = document.getElementById('add-court-modal');
     document.getElementById('show-add-court-modal-btn').addEventListener('click', () => {
         modal.style.display = 'block';
@@ -269,12 +243,8 @@ export default function init() {
             modal.style.display = 'none';
         }
     });
-    // Cho phép nhấn Enter để lưu
     document.getElementById('add-court-form').addEventListener('submit', (e) => {
         e.preventDefault();
         handleSaveNewCourt();
     });
-
-    // Gán sự kiện cho danh sách sân
-    document.getElementById('courts-list-container').addEventListener('click', handleCourtListClick);
 }

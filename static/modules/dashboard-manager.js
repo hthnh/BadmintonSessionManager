@@ -1,4 +1,4 @@
-// static/modules/dashboard-manager.js (ĐÃ SỬA LỖI)
+// static/modules/dashboard-manager.js (Đã cập nhật theo yêu cầu mới)
 
 // Biến toàn cục để lưu trữ danh sách người chơi, tránh gọi API nhiều lần
 let allPlayers = [];
@@ -47,43 +47,6 @@ function renderActivePlayers() {
         const div = document.createElement('div');
         div.className = 'list-item-player';
         div.innerHTML = `<span>${player.name}</span> <span class="player-elo">ELO: ${Math.round(player.elo_rating)}</span>`;
-        container.appendChild(div);
-    });
-}
-
-/** Hiển thị các trận đang gợi ý */
-function renderSuggestions(suggestions) {
-    const container = document.getElementById('queue-container');
-    container.innerHTML = '';
-
-    if (!suggestions || suggestions.length === 0) {
-        container.innerHTML = '<div class="list-item-placeholder">Không có gợi ý nào phù hợp.</div>';
-        return;
-    }
-
-    suggestions.forEach(match => {
-        const div = document.createElement('div');
-        div.className = 'match-card suggested-match';
-        div.innerHTML = `
-            <div class="match-card__header">
-                <strong>Sân ${match.court_name}</strong>
-                <span class="balance-score">Cân bằng: ${match.balance_score}</span>
-            </div>
-            <div class="match-card__teams">
-                <div class="team">
-                    <span>${match.team_A[0].name}</span>
-                    <span>${match.team_A[1].name}</span>
-                </div>
-                <div class="vs-divider">VS</div>
-                <div class="team">
-                    <span>${match.team_B[0].name}</span>
-                    <span>${match.team_B[1].name}</span>
-                </div>
-            </div>
-            <div class="match-card__actions">
-                <button class="button button--primary start-match-btn" data-court-id="${match.court_id}" data-team-a='${JSON.stringify(match.team_A)}' data-team-b='${JSON.stringify(match.team_B)}'>Bắt đầu</button>
-            </div>
-        `;
         container.appendChild(div);
     });
 }
@@ -146,35 +109,8 @@ async function refreshDashboard() {
     const ongoingMatches = await apiCall('/api/matches/ongoing');
     renderOngoingMatches(ongoingMatches);
 
-    document.getElementById('queue-container').innerHTML = '<div class="list-item-placeholder">Bấm "Tạo trận" để xem gợi ý.</div>';
-}
-
-/** Xử lý khi bấm nút "Tạo trận" */
-async function handleSuggestClick() {
-    const params = new URLSearchParams({
-        prioritize_rest: true,
-        avoid_rematch: true,
-    }).toString();
-    const data = await apiCall(`/api/suggestions?${params}`);
-    if (data) {
-        renderSuggestions(data.suggestions);
-    }
-}
-
-/** Xử lý khi bấm nút "Bắt đầu" một trận đấu gợi ý */
-async function handleStartMatchClick(event) {
-    if (!event.target.classList.contains('start-match-btn')) return;
-    const button = event.target;
-    const matchData = {
-        court_id: button.dataset.courtId,
-        team_A: JSON.parse(button.dataset.teamA),
-        team_B: JSON.parse(button.dataset.teamB),
-    };
-    const result = await apiCall('/api/matches/start', 'POST', matchData);
-    if (result) {
-        alert(result.message);
-        refreshDashboard();
-    }
+    // TODO: Cập nhật logic cho hàng chờ để hiển thị các trận đang chờ (nếu có)
+    document.getElementById('queue-container').innerHTML = '<div class="list-item-placeholder">Chưa có trận đấu nào trong hàng chờ.</div>';
 }
 
 /** Xử lý khi bấm nút chọn đội thắng để kết thúc trận */
@@ -225,14 +161,19 @@ export default function init() {
     document.getElementById('manage-courts-btn').addEventListener('click', () => {
         window.location.href = '/manage-courts';
     });
+    
+    // [ĐÃ SỬA] Nút "Tạo trận" sẽ điều hướng đến trang tạo thủ công
     document.getElementById('suggest-btn').addEventListener('click', () => {
         window.location.href = '/create';
     });
 
-    // [SỬA LỖI] Gán sự kiện cho popup điểm danh
+    document.getElementById('export-history-btn').addEventListener('click', () => {
+        window.location.href = '/history';
+    });
+
+    // Gán sự kiện cho popup điểm danh
     const modal = document.getElementById('attendance-modal');
     document.getElementById('attendance-btn').addEventListener('click', async () => {
-        // Luôn đảm bảo dữ liệu mới nhất trước khi hiển thị
         if (allPlayers.length === 0) {
             allPlayers = await apiCall('/api/players') || [];
         }
@@ -248,6 +189,5 @@ export default function init() {
     });
 
     // Event delegation
-    document.getElementById('queue-container').addEventListener('click', handleStartMatchClick);
     document.getElementById('active-courts-container').addEventListener('click', handleFinishMatchClick);
 }

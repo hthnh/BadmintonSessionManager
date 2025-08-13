@@ -42,10 +42,15 @@ def finish_match(match_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        players = conn.execute(
+        players_rows = conn.execute(
             'SELECT p.id, p.elo_rating, p.total_matches_played, p.total_wins, mp.team, p.gender '
             'FROM players p JOIN match_players mp ON p.id = mp.player_id WHERE mp.match_id = ?', (match_id,)
         ).fetchall()
+
+        # === [SỬA LỖI] Chuyển đổi list các sqlite3.Row thành list các dict ===
+        players = [dict(row) for row in players_rows]
+        # ===================================================================
+
         if len(players) != 4: return jsonify({'error': 'Không tìm thấy đủ người chơi cho trận đấu này'}), 404
         
         team_a_players = [p for p in players if p['team'] == 'A']
@@ -62,7 +67,6 @@ def finish_match(match_id):
             new_total_matches = player['total_matches_played'] + 1
             new_wins = player['total_wins'] + 1 if won_match else player['total_wins']
             
-            # Tính toán win_rate mới, tránh chia cho 0
             new_win_rate = new_wins / new_total_matches if new_total_matches > 0 else 0.0
 
             cursor.execute(
@@ -98,6 +102,8 @@ def finish_match(match_id):
         return jsonify({'error': f'Lỗi database: {e}'}), 500
     finally:
         conn.close()
+
+# ... (các hàm còn lại giữ nguyên) ...
 
 @matches_api.route('/matches/ongoing', methods=['GET'])
 def get_ongoing_matches():
@@ -155,8 +161,6 @@ def create_match():
     finally:
         conn.close()
 
-
-# Dán đoạn mã này vào cuối tệp api/matches.py
 
 @matches_api.route('/matches/history', methods=['GET'])
 def get_match_history():
