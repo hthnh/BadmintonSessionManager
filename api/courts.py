@@ -5,7 +5,7 @@ import sqlite3
 courts_api = Blueprint('courts_api', __name__)
 
 def get_db_connection():
-    conn = sqlite3.connect('badminton.db')
+    conn = sqlite3.connect('badminton.db', timeout=15)
     conn.row_factory = sqlite3.Row
     return conn
 

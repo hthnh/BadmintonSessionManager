@@ -4,53 +4,97 @@
     <meta charset="UTF-8">
     <title>Quản lý sân - BSM</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .courts-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        .court-card {
+            background-color: var(--color-surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            display: flex;
+            flex-direction: column;
+        }
+        .court-card__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .court-card__header h3 { margin: 0; color: var(--color-primary); }
+        .court-card__actions .button { margin-left: 0.5rem; padding: 0.4rem 0.8rem; }
+        .court-card__body {
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 1rem;
+            height: 200px;
+        }
+        .player-slot {
+            background-color: #e9ecef;
+            border: 2px dashed #ced4da;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-secondary);
+            font-style: italic;
+        }
+    </style>
 </head>
 <body>
     <div class="page-container">
          <aside class="sidebar">
-            <div class="sidebar__header">
-                <h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4>
-            </div>
+            <div class="sidebar__header"><h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4></div>
             <nav class="sidebar__nav">
-                <a href="/" class="nav-item">
-                    <span class="nav-item__icon">📊</span>
-                    <span class="nav-item__text">Dashboard</span>
-                </a>
-
-                <a href="/manage-players" class="nav-item">
-                    <span class="nav-item__icon">✅</span>
-                    <span class="nav-item__text">Player Manage</span>
-                </a>
-
-                <a href="/manage-courts" class="nav-item">
-                    <span class="nav-item__icon">🏟️</span>
-                    <span class="nav-item__text">Courts Manage</span>
-                </a>
-                
-                <a href="/history" class="nav-item">
-                    <span class="nav-item__icon">📄</span>
-                    <span class="nav-item__text">History</span>
-                </a>
-
-                <a href="/settings" class="nav-item">
-                    <span class="nav-item__icon">⚙️</span>
-                    <span class="nav-item__text">Settings</span>
-                </a>
+                <a href="/" class="nav-item"><span class="nav-item__icon">📊</span><span class="nav-item__text">Dashboard</span></a>
+                <a href="/manage-players" class="nav-item"><span class="nav-item__icon">✅</span><span class="nav-item__text">Player Manage</span></a>
+                <a href="/manage-courts" class="nav-item active"><span class="nav-item__icon">🏟️</span><span class="nav-item__text">Courts Manage</span></a>
+                <a href="/history" class="nav-item"><span class="nav-item__icon">📄</span><span class="nav-item__text">History</span></a>
+                <a href="/settings" class="nav-item"><span class="nav-item__icon">⚙️</span><span class="nav-item__text">Settings</span></a>
             </nav>
-            <div class="sidebar__footer">
-                <div id="clock" class="clock">Đang tải...</div>
-            </div>
+            <div class="sidebar__footer"><div id="clock" class="clock">Đang tải...</div></div>
         </aside>
+
         <main class="main-content">
             <header class="main-content__header">
                 <h1>Quản lý sân</h1>
+                <button id="show-add-court-modal-btn" class="button button--primary">Thêm sân mới</button>
             </header>
             <div class="main-grid-container main-grid-container--single-column">
                 <section class="card">
-                    <h2 class="card__title">Danh sách các sân</h2>
-                    </section>
+                    <h2 class="card__title">Danh sách sân</h2>
+                    <div id="courts-list-container" class="courts-grid-container">
+                        </div>
+                </section>
             </div>
         </main>
     </div>
-    </body>
+
+    <div id="add-court-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Thêm sân mới</h2>
+                <span id="close-add-court-modal" class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="add-court-form">
+                    <div class="form-group">
+                        <label for="court-name-input">Tên sân</label>
+                        <input type="text" id="court-name-input" placeholder="Nhập tên sân (ví dụ: Sân 1, Sân 2...)" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="save-court-btn" class="button button--primary">Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
+</body>
 </html>

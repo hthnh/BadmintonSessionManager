@@ -17,7 +17,7 @@
                 <h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4>
             </div>
             <nav class="sidebar__nav">
-                <a href="/" class="nav-item">
+                <a href="/" class="nav-item active">
                     <span class="nav-item__icon">📊</span>
                     <span class="nav-item__text">Dashboard</span>
                 </a>
@@ -89,7 +89,7 @@
                     <div class="card">
                         <div class="card__header">
                             <h2 class="card__title">Người chơi có mặt</h2>
-                            <button id="attendance-btn" class="button button--secondary">Quản lý người chơi</button>
+                            <button id="attendance-btn" class="button button--secondary">Điểm danh</button>
                         </div>
                         <div id="active-players-container" class="list-container list-container--scrollable">
                             <div class="list-item-placeholder">Chưa có người chơi nào.</div>
@@ -100,6 +100,29 @@
         </main>
     </div>
 
+
+
+
+    <div id="attendance-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Điểm danh người chơi</h2>
+                <span id="close-attendance-modal" class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body" id="attendance-list-container">
+                </div>
+            <div class="modal-footer">
+                <button id="save-attendance-btn" class="button button--primary">Lưu thay đổi</button>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
+
+
+
+
+
+
 </body>
 </html>

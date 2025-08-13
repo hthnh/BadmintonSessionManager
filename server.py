@@ -47,6 +47,10 @@ def courts_page():
 def history_page():
     """Phục vụ trang quản lý admin.html."""
     return render_template('history.html')
+@app.route('/create')
+def create_page():
+    """Phục vụ trang tạo trận đấu thủ công."""
+    return render_template('create.html')
 
 
 

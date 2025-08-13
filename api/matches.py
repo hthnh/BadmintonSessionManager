@@ -6,7 +6,7 @@ import logic # Import file logic chung của chúng ta
 matches_api = Blueprint('matches_api', __name__)
 
 def get_db_connection():
-    conn = sqlite3.connect('badminton.db')
+    conn = sqlite3.connect('badminton.db', timeout=15)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -59,13 +59,24 @@ def finish_match(match_id):
 
         def update_player_stats(player, elo_change_amount, won_match):
             new_elo = player['elo_rating'] + elo_change_amount
+            new_total_matches = player['total_matches_played'] + 1
             new_wins = player['total_wins'] + 1 if won_match else player['total_wins']
-            cursor.execute(
-                'UPDATE players SET elo_rating = ?, total_matches_played = total_matches_played + 1, total_wins = ?, last_played_date = CURRENT_TIMESTAMP WHERE id = ?',
-                (new_elo, new_wins, player['id'])
-            )
-            cursor.execute('UPDATE match_players SET elo_after = ? WHERE match_id = ? AND player_id = ?', (new_elo, match_id, player['id']))
+            
+            # Tính toán win_rate mới, tránh chia cho 0
+            new_win_rate = new_wins / new_total_matches if new_total_matches > 0 else 0.0
 
+            cursor.execute(
+                '''UPDATE players 
+                SET elo_rating = ?, 
+                    total_matches_played = ?, 
+                    total_wins = ?, 
+                    win_rate = ?, 
+                    last_played_date = CURRENT_TIMESTAMP 
+                WHERE id = ?''',
+                (new_elo, new_total_matches, new_wins, new_win_rate, player['id'])
+            )
+            cursor.execute('UPDATE match_players SET elo_after = ? WHERE match_id = ? AND player_id = ?', 
+                        (new_elo, match_id, player['id']))
         for p in team_a_players:
             k_factor = logic.get_dynamic_k_factor(p)
             elo_change = k_factor * (result_for_a - expected_a)
@@ -143,3 +154,64 @@ def create_match():
         return jsonify({'error': f'Lỗi database: {e}'}), 500
     finally:
         conn.close()
+
+
+# Dán đoạn mã này vào cuối tệp api/matches.py
+
+@matches_api.route('/matches/history', methods=['GET'])
+def get_match_history():
+    """
+    Lấy lịch sử tất cả các trận đấu đã kết thúc.
+    """
+    query = """
+        SELECT
+            m.id as match_id,
+            m.start_time,
+            m.end_time,
+            m.winning_team,
+            c.name as court_name,
+            p.id as player_id,
+            p.name as player_name,
+            mp.team,
+            mp.elo_before,
+            mp.elo_after
+        FROM matches m
+        JOIN courts c ON m.court_id = c.id
+        JOIN match_players mp ON m.id = mp.match_id
+        JOIN players p ON mp.player_id = p.id
+        WHERE m.status = 'finished'
+        ORDER BY m.end_time DESC, m.id, mp.team;
+    """
+    conn = get_db_connection()
+    rows = conn.execute(query).fetchall()
+    conn.close()
+
+    matches_dict = {}
+    for row in rows:
+        match_id = row['match_id']
+        if match_id not in matches_dict:
+            matches_dict[match_id] = {
+                'id': match_id,
+                'court_name': row['court_name'],
+                'start_time': row['start_time'],
+                'end_time': row['end_time'],
+                'winning_team': row['winning_team'],
+                'team_A': [],
+                'team_B': []
+            }
+        
+        elo_change = (row['elo_after'] - row['elo_before']) if row['elo_after'] is not None else 0
+        player_info = {
+            'id': row['player_id'],
+            'name': row['player_name'],
+            'elo_before': round(row['elo_before']),
+            'elo_after': round(row['elo_after']) if row['elo_after'] is not None else 'N/A',
+            'elo_change': round(elo_change, 2)
+        }
+
+        if row['team'] == 'A':
+            matches_dict[match_id]['team_A'].append(player_info)
+        else:
+            matches_dict[match_id]['team_B'].append(player_info)
+
+    return jsonify(list(matches_dict.values()))

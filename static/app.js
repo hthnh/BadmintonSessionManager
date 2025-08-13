@@ -1,7 +1,11 @@
 // static/app.js
 
-// Nhập các module tương ứng với từng trang
+
 import initPlayerManager from './modules/player-manager.js';
+import initDashboardManager from './modules/dashboard-manager.js';
+import initCourtManager from './modules/court-manager.js';
+import initHistoryManager from './modules/history-manager.js'; 
+import initCreateManager from './modules/create-manager.js';
 
 /**
  * Hàm cập nhật đồng hồ ở sidebar
@@ -10,38 +14,38 @@ function updateClock() {
     const clockElement = document.getElementById('clock');
     if (clockElement) {
         const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
-        clockElement.textContent = now.toLocaleDateString('vi-VN', options);
+
+        // Sử dụng một mẹo nhỏ với locale 'sv-SE' (Thụy Điển) để có định dạng YYYY-MM-DD HH:MM:SS
+        // Sau đó thay thế khoảng trắng ở giữa bằng chữ 'T' nếu muốn chuẩn ISO đầy đủ
+        const isoString = now.toLocaleString('sv-SE').replace(' ', '   '); // Dùng 3 khoảng trắng cho dễ nhìn
+
+        clockElement.textContent = isoString; // Kết quả: 2025-08-13   13:23:05
     }
 }
-
 /**
  * Hàm khởi tạo chính của toàn bộ ứng dụng
  */
 function initializeApp() {
     console.log("Ứng dụng đang khởi tạo...");
-
-    // 1. Khởi tạo các thành phần chung
+    
     updateClock();
     setInterval(updateClock, 1000);
 
-    // 2. Nhận diện trang hiện tại và tải module tương ứng
-    // Chúng ta có thể dựa vào một ID duy nhất trên thẻ <body> hoặc URL
-    // Ở đây, ta sẽ dùng URL pathname để đơn giản.
     const path = window.location.pathname;
 
     if (path.includes('/manage-players')) {
-        console.log("Đang ở trang Quản lý Người chơi -> Khởi tạo PlayerManager");
         initPlayerManager();
     } else if (path.includes('/manage-courts')) {
-        // Tương lai: initCourtManager();
-    } else {
-        console.log("Đang ở trang Dashboard");
-        // Tương lai: initDashboard();
+        initCourtManager();
+    } else if (path.includes('/history')) {
+        initHistoryManager();
+    } else if (path.includes('/create')) { 
+        initCreateManager();
+    } else if (path === '/') {
+        initDashboardManager();
     }
 
-    console.log("Ứng dụng đã khởi tạo thành công với cấu trúc mới!");
+    console.log("Ứng dụng đã khởi tạo thành công!");
 }
 
-// Bắt đầu chạy ứng dụng khi DOM đã sẵn sàng
 document.addEventListener('DOMContentLoaded', initializeApp);

@@ -2,55 +2,83 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Xuất báo cáo - BSM</title>
+    <title>Lịch sử trận đấu - BSM</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .history-grid-container {
+            display: grid;
+            grid-template-columns: 1fr; /* Một cột duy nhất */
+            gap: 1.5rem;
+        }
+        .history-card {
+            background-color: var(--color-surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            border-left: 5px solid var(--color-secondary);
+        }
+        .history-card.winner-A { border-left-color: #198754; /* Màu xanh lá */ }
+        .history-card.winner-B { border-left-color: #0d6efd; /* Màu xanh dương */ }
+
+        .history-card__header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-card__header h3 { margin: 0; }
+        .history-card__header span { color: var(--color-secondary); }
+
+        .history-card__body {
+            display: flex;
+            justify-content: space-around;
+            padding: 1.5rem;
+            align-items: center;
+        }
+        .team-details { width: 45%; }
+        .team-details h4 {
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--color-border);
+        }
+        .team-details.winner h4 {
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .player-elo-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        .elo-change { font-weight: 700; }
+        .elo-change.positive { color: #198754; }
+        .elo-change.negative { color: #dc3545; }
+        .vs-separator { font-size: 2rem; font-weight: 700; color: var(--color-border); }
+    </style>
 </head>
 <body>
     <div class="page-container">
-         <aside class="sidebar">
-            <div class="sidebar__header">
-                <h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4>
-            </div>
+        <aside class="sidebar">
+            <div class="sidebar__header"><h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4></div>
             <nav class="sidebar__nav">
-                <a href="/" class="nav-item">
-                    <span class="nav-item__icon">📊</span>
-                    <span class="nav-item__text">Dashboard</span>
-                </a>
-
-                <a href="/manage-players" class="nav-item">
-                    <span class="nav-item__icon">✅</span>
-                    <span class="nav-item__text">Player Manage</span>
-                </a>
-
-                <a href="/manage-courts" class="nav-item">
-                    <span class="nav-item__icon">🏟️</span>
-                    <span class="nav-item__text">Courts Manage</span>
-                </a>
-                
-                <a href="/history" class="nav-item">
-                    <span class="nav-item__icon">📄</span>
-                    <span class="nav-item__text">History</span>
-                </a>
-
-                <a href="/settings" class="nav-item">
-                    <span class="nav-item__icon">⚙️</span>
-                    <span class="nav-item__text">Settings</span>
-                </a>
+                <a href="/" class="nav-item"><span class="nav-item__icon">📊</span><span class="nav-item__text">Dashboard</span></a>
+                <a href="/manage-players" class="nav-item"><span class="nav-item__icon">✅</span><span class="nav-item__text">Player Manage</span></a>
+                <a href="/manage-courts" class="nav-item"><span class="nav-item__icon">🏟️</span><span class="nav-item__text">Courts Manage</span></a>
+                <a href="/history" class="nav-item active"><span class="nav-item__icon">📄</span><span class="nav-item__text">History</span></a>
+                <a href="/settings" class="nav-item"><span class="nav-item__icon">⚙️</span><span class="nav-item__text">Settings</span></a>
             </nav>
-            <div class="sidebar__footer">
-                <div id="clock" class="clock">Đang tải...</div>
-            </div>
+            <div class="sidebar__footer"><div id="clock" class="clock">Đang tải...</div></div>
         </aside>
+
         <main class="main-content">
             <header class="main-content__header">
                 <h1>Lịch sử & Báo cáo</h1>
             </header>
-            <div class="main-grid-container main-grid-container--single-column">
-                <section class="card">
-                    <h2 class="card__title">Tùy chọn xuất báo cáo</h2>
-                    </section>
-            </div>
+            <div id="history-list-container" class="main-grid-container history-grid-container">
+                </div>
         </main>
     </div>
-    </body>
+
+    <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
+</body>
 </html>

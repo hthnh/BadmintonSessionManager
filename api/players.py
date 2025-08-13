@@ -7,7 +7,7 @@ import sqlite3
 players_api = Blueprint('players_api', __name__)
 
 def get_db_connection():
-    conn = sqlite3.connect('badminton.db')
+    conn = sqlite3.connect('badminton.db', timeout=15)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -18,46 +18,76 @@ def get_players():
     conn.close()
     return jsonify([dict(row) for row in players])
 
+
 @players_api.route('/players', methods=['POST'])
 def add_player():
     new_player = request.get_json()
     if not new_player or not new_player.get('name'):
         return jsonify({'error': 'Thiếu tên người chơi'}), 400
+
+    # Lấy tất cả các giá trị từ form, với giá trị mặc định nếu có
     name = new_player.get('name')
     player_type = new_player.get('type', 'Vãng lai')
-    elo = new_player.get('elo_rating', 1500)
     gender = new_player.get('gender', 'Nam')
+    contact_info = new_player.get('contact_info', None)
+    
+    # Lấy các giá trị nâng cao, nếu người dùng cung cấp
+    elo = new_player.get('elo_rating', 1500)
+    k_factor = new_player.get('k_factor', 32)
+    provisional_games_left = new_player.get('provisional_games_left', 5)
+    rank_tier = new_player.get('rank_tier', None)
+
     try:
         conn = get_db_connection()
-        conn.execute('INSERT INTO players (name, type, elo_rating, gender) VALUES (?, ?, ?, ?)',
-                     (name, player_type, elo, gender))
+        # Thêm các trường mới vào câu lệnh SQL
+        conn.execute('''
+            INSERT INTO players (name, type, gender, contact_info, elo_rating, k_factor, provisional_games_left, rank_tier) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''',
+            (name, player_type, gender, contact_info, elo, k_factor, provisional_games_left, rank_tier))
         conn.commit()
         conn.close()
         return jsonify({'message': f'Đã thêm thành công người chơi {name}'}), 201
     except sqlite3.IntegrityError:
         return jsonify({'error': 'Lỗi khi thêm người chơi'}), 500
+    
 
 @players_api.route('/players/<int:player_id>', methods=['PUT'])
 def update_player(player_id):
     data = request.get_json()
     if not data: return jsonify({'error': 'Không có dữ liệu để cập nhật'}), 400
-    fields_to_update, values, allowed_fields = [], [], ['name', 'type', 'is_active', 'elo_rating', 'gender']
+
+    # Mở rộng danh sách các trường được phép cập nhật
+    allowed_fields = [
+        'name', 'type', 'is_active', 'elo_rating', 'gender', 
+        'contact_info', 'k_factor', 'provisional_games_left', 'rank_tier'
+    ]
+    
+    fields_to_update = []
+    values = []
+    
     for field in allowed_fields:
         if field in data:
             fields_to_update.append(f"{field} = ?")
             values.append(data[field])
+
     if not fields_to_update: return jsonify({'error': 'Không có trường hợp lệ nào để cập nhật'}), 400
+    
     values.append(player_id)
     sql = f"UPDATE players SET {', '.join(fields_to_update)} WHERE id = ?"
+    
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute(sql, values)
     conn.commit()
+    
     if cursor.rowcount == 0:
         conn.close()
         return jsonify({'error': 'Không tìm thấy người chơi'}), 404
+    
     conn.close()
     return jsonify({'message': f'Cập nhật thành công người chơi ID {player_id}'})
+
 
 @players_api.route('/players/<int:player_id>', methods=['DELETE'])
 def delete_player(player_id):

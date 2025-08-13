@@ -2,55 +2,116 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Xuất báo cáo - BSM</title>
+    <title>Tạo trận đấu - BSM</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .creation-container {
+            display: grid;
+            grid-template-columns: 2fr 2fr 1.5fr; /* 3 cột */
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+        .selection-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            max-height: 75vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .selection-item {
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: space-between;
+        }
+        .selection-item:hover {
+            border-color: var(--color-primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .selection-item.disabled {
+            background-color: #f8f9fa;
+            color: #adb5bd;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .selection-item.selected {
+            background-color: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary-dark);
+        }
+        .staging-card {
+            position: sticky;
+            top: 1.5rem; /* Giữ card cố định khi cuộn */
+        }
+        .staging-list li {
+            list-style-type: none;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed var(--color-border);
+        }
+        .staging-list { padding: 0; margin-top: 1rem; }
+        .staging-placeholder { color: var(--color-secondary); }
+    </style>
 </head>
 <body>
     <div class="page-container">
-         <aside class="sidebar">
-            <div class="sidebar__header">
-                <h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4>
-            </div>
+        <aside class="sidebar">
+            <div class="sidebar__header"><h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4></div>
             <nav class="sidebar__nav">
                 <a href="/" class="nav-item">
-                    <span class="nav-item__icon">📊</span>
-                    <span class="nav-item__text">Dashboard</span>
+                    <span class="nav-item__icon">📊</span><span class="nav-item__text">Dashboard</span>
                 </a>
-
                 <a href="/manage-players" class="nav-item">
-                    <span class="nav-item__icon">✅</span>
-                    <span class="nav-item__text">Player Manage</span>
+                    <span class="nav-item__icon">✅</span><span class="nav-item__text">Player Manage</span>
                 </a>
-
                 <a href="/manage-courts" class="nav-item">
-                    <span class="nav-item__icon">🏟️</span>
-                    <span class="nav-item__text">Courts Manage</span>
+                    <span class="nav-item__icon">🏟️</span><span class="nav-item__text">Courts Manage</span>
                 </a>
-                
                 <a href="/history" class="nav-item">
-                    <span class="nav-item__icon">📄</span>
-                    <span class="nav-item__text">History</span>
+                    <span class="nav-item__icon">📄</span><span class="nav-item__text">History</span>
                 </a>
-
                 <a href="/settings" class="nav-item">
-                    <span class="nav-item__icon">⚙️</span>
-                    <span class="nav-item__text">Settings</span>
+                    <span class="nav-item__icon">⚙️</span><span class="nav-item__text">Settings</span>
                 </a>
             </nav>
-            <div class="sidebar__footer">
-                <div id="clock" class="clock">Đang tải...</div>
-            </div>
+            <div class="sidebar__footer"><div id="clock" class="clock">Đang tải...</div></div>
         </aside>
         <main class="main-content">
             <header class="main-content__header">
-                <h1>Lịch sử & Báo cáo</h1>
+                <h1>Tạo trận đấu thủ công</h1>
             </header>
-            <div class="main-grid-container main-grid-container--single-column">
+            <div class="creation-container">
                 <section class="card">
-                    <h2 class="card__title">Tùy chọn xuất báo cáo</h2>
-                    </section>
+                    <h2 class="card__title">1. Chọn 4 người chơi</h2>
+                    <div id="player-list-container" class="selection-list">
+                        </div>
+                </section>
+
+                <section class="card">
+                    <h2 class="card__title">2. Chọn 1 sân</h2>
+                    <div id="court-list-container" class="selection-list">
+                        </div>
+                </section>
+
+                <section class="card staging-card">
+                    <h2 class="card__title">3. Chốt trận</h2>
+                    <div id="staging-area">
+                        <h4>Người chơi đã chọn:</h4>
+                        <ul id="staging-players" class="staging-list">
+                            <li class="staging-placeholder">Chưa chọn người chơi nào.</li>
+                        </ul>
+                        <hr>
+                        <h4>Sân đã chọn:</h4>
+                        <p id="staging-court" class="staging-placeholder">Chưa chọn sân.</p>
+                    </div>
+                    <button id="create-match-btn" class="button button--primary" style="width:100%; margin-top: 1.5rem;" disabled>Tạo Trận</button>
+                </section>
             </div>
         </main>
     </div>
-    </body>
+    <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
+</body>
 </html>
