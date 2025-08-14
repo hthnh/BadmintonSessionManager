@@ -72,9 +72,8 @@ function renderPlayerList() {
 }
 
 function populatePlayerDetailModal(player) {
-    document.getElementById('modal-player-name').textContent = player.name;
     const fields = [
-        'id', 'join_date', 'type', 'gender', 'contact_info', 'is_active',
+        'id','name', 'join_date', 'type', 'gender', 'contact_info', 'is_active',
         'elo_rating', 'k_factor', 'rank_tier', 'provisional_games_left',
         'total_matches_played', 'total_wins', 'win_rate', 'current_win_streak',
         'longest_win_streak', 'last_played_date', 'total_sessions_attended'
