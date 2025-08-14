@@ -1,4 +1,4 @@
-// static/modules/history-manager.js
+// static/modules/history-manager.js (Phiên bản cuối cùng)
 
 async function apiCall(url) {
     try {
@@ -12,69 +12,107 @@ async function apiCall(url) {
     }
 }
 
+/** [MỚI] Hàm điền dữ liệu người chơi vào modal */
+function populatePlayerDetailModal(player) {
+    const fields = [
+        'id','name', 'join_date', 'type', 'gender', 'contact_info', 'is_active',
+        'elo_rating', 'k_factor', 'rank_tier', 'provisional_games_left',
+        'total_matches_played', 'total_wins', 'win_rate', 'current_win_streak',
+        'longest_win_streak', 'last_played_date', 'total_sessions_attended'
+    ];
+    fields.forEach(field => {
+        const element = document.getElementById(`detail-${field}`);
+        if (element) {
+            let value = player[field];
+            // Định dạng lại một số giá trị cho dễ đọc
+            if (field === 'is_active') value = value ? 'Có mặt' : 'Vắng';
+            if (field.includes('date') && value) value = new Date(value).toLocaleString('vi-VN');
+            else if (field.includes('date')) value = 'Chưa có';
+            if (field === 'win_rate') value = `${(value * 100).toFixed(1)}%`;
+            if (field === 'elo_rating') value = Math.round(value);
+
+            element.textContent = (value !== null && value !== undefined) ? value : 'N/A';
+        }
+    });
+    document.getElementById('player-detail-modal').style.display = 'block';
+}
+
+/** [CẬP NHẬT] Hàm render danh sách lịch sử */
 function renderHistoryList(matches) {
     const container = document.getElementById('history-list-container');
     container.innerHTML = '';
-
     if (!matches || matches.length === 0) {
         container.innerHTML = '<div class="list-item-placeholder">Chưa có trận đấu nào trong lịch sử.</div>';
         return;
     }
-
     matches.forEach(match => {
         const card = document.createElement('div');
         card.className = 'history-card';
-        if (match.winning_team) {
-            card.classList.add(`winner-${match.winning_team}`);
-        }
-
+        if (match.winning_team) card.classList.add(`winner-${match.winning_team}`);
         const matchDate = new Date(match.end_time).toLocaleString('vi-VN', {
             year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
         });
-
         const renderTeam = (team, teamLetter) => {
             const isWinner = match.winning_team === teamLetter;
             let playersHtml = '';
             team.forEach(p => {
                 const changeSign = p.elo_change > 0 ? '+' : '';
                 const changeClass = p.elo_change > 0 ? 'positive' : (p.elo_change < 0 ? 'negative' : '');
+                // Tách tên và ELO để có thể click vào tên
                 playersHtml += `
                     <div class="player-elo-info">
-                        <span>${p.name} (${p.elo_before} -> ${p.elo_after})</span>
+                        <div>
+                            <span class="player-name-link" data-player-id="${p.id}">${p.name}</span>
+                            <span class="elo-timeline">(${p.elo_before} -> ${p.elo_after})</span>
+                        </div>
                         <span class="elo-change ${changeClass}">${changeSign}${p.elo_change}</span>
-                    </div>
-                `;
+                    </div>`;
             });
-            return `
-                <div class="team-details ${isWinner ? 'winner' : ''}">
-                    <h4>Đội ${teamLetter} ${isWinner ? ' (Thắng)' : ''}</h4>
-                    ${playersHtml}
-                </div>
-            `;
+            return `<div class="team-details ${isWinner ? 'winner' : ''}"><h4>Đội ${teamLetter} ${isWinner ? ' (Thắng)' : ''}</h4>${playersHtml}</div>`;
         };
-        
         card.innerHTML = `
-            <div class="history-card__header">
-                <h3>Sân: ${match.court_name}</h3>
-                <span>${matchDate}</span>
-            </div>
+            <div class="history-card__header"><h3>Sân: ${match.court_name}</h3><span>${matchDate}</span></div>
             <div class="history-card__body">
                 ${renderTeam(match.team_A, 'A')}
-                <div class="vs-separator">VS</div>
+                <div class="vs-separator"><span class="score-display">${match.score_A} - ${match.score_B}</span></div>
                 ${renderTeam(match.team_B, 'B')}
-            </div>
-        `;
+            </div>`;
         container.appendChild(card);
     });
 }
 
-async function fetchAndRenderHistory() {
-    const historyData = await apiCall('/api/matches/history');
-    if (historyData) {
-        renderHistoryList(historyData);
+/** [MỚI] Hàm xử lý khi click vào tên người chơi */
+async function handlePlayerNameClick(event) {
+    if (!event.target.classList.contains('player-name-link')) return;
+    const playerId = event.target.dataset.playerId;
+    if (!playerId) return;
+    const playerData = await apiCall(`/api/players/${playerId}`);
+    if (playerData) {
+        populatePlayerDetailModal(playerData);
     }
 }
 
+async function fetchAndRenderHistory() {
+    const historyData = await apiCall('/api/matches/history');
+    if (historyData) renderHistoryList(historyData);
+}
+
+/** [CẬP NHẬT] Hàm khởi tạo */
 export default function init() {
     fetchAndRenderHistory();
+
+    // Sử dụng event delegation để xử lý click hiệu quả
+    document.getElementById('history-list-container').addEventListener('click', handlePlayerNameClick);
+
+    const modal = document.getElementById('player-detail-modal');
+    if (modal) {
+        modal.querySelector('.close-btn').addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+        window.addEventListener('click', (event) => {
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        });
+    }
 }

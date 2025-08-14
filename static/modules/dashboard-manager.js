@@ -102,16 +102,6 @@ function renderAttendanceModal() {
 // === CÁC HÀM XỬ LÝ SỰ KIỆN ===
 
 /** Lấy và hiển thị lại toàn bộ dữ liệu trên dashboard */
-async function refreshDashboard() {
-    allPlayers = await apiCall('/api/players') || [];
-    renderActivePlayers();
-
-    const ongoingMatches = await apiCall('/api/matches/ongoing');
-    renderOngoingMatches(ongoingMatches);
-
-    // TODO: Cập nhật logic cho hàng chờ để hiển thị các trận đang chờ (nếu có)
-    document.getElementById('queue-container').innerHTML = '<div class="list-item-placeholder">Chưa có trận đấu nào trong hàng chờ.</div>';
-}
 
 /** Xử lý khi bấm nút chọn đội thắng để kết thúc trận */
 async function handleFinishMatchClick(event) {
@@ -149,6 +139,63 @@ async function handleAttendanceSave() {
     modal.style.display = 'none';
     refreshDashboard();
 }
+
+function renderDashboardHistory(matches) {
+    const container = document.getElementById('match-history-container');
+    container.innerHTML = '';
+
+    if (!matches || matches.length === 0) {
+        container.innerHTML = '<div class="list-item-placeholder">Chưa có lịch sử trận đấu.</div>';
+        return;
+    }
+
+    const recentMatches = matches.slice(0, 7);
+
+    recentMatches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'history-item-summary';
+
+        const teamAPlayers = match.team_A.map(p => p.name.split(' ').pop()).join(' & ');
+        const teamBPlayers = match.team_B.map(p => p.name.split(' ').pop()).join(' & ');
+
+        // === THAY ĐỔI CẤU TRÚC HTML Ở ĐÂY ===
+        div.innerHTML = `
+            <div class="history-item-summary__header">
+                <strong>Sân ${match.court_name}</strong>
+                <span class="winner-tag winner-${match.winning_team}">
+                    Đội ${match.winning_team} thắng
+                </span>
+            </div>
+            <div class="history-item-summary__body">
+                <span class="team-name-summary ${match.winning_team === 'A' ? 'team-winner-summary' : ''}">${teamAPlayers}</span>
+                <span class="score-summary">${match.score_A} - ${match.score_B}</span>
+                <span class="team-name-summary ${match.winning_team === 'B' ? 'team-winner-summary' : ''}">${teamBPlayers}</span>
+            </div>
+        `;
+        // ===================================
+        container.appendChild(div);
+    });
+}
+
+
+async function refreshDashboard() {
+    // Sử dụng Promise.all để tải các dữ liệu song song, tăng tốc độ load
+    const [players, ongoingMatches, history] = await Promise.all([
+        apiCall('/api/players'),
+        apiCall('/api/matches/ongoing'),
+        apiCall('/api/matches/history') // <-- Thêm dòng này
+    ]);
+
+    allPlayers = players || [];
+    renderActivePlayers();
+    renderOngoingMatches(ongoingMatches);
+    renderDashboardHistory(history); // <-- Thêm dòng này
+
+    // Cập nhật hàng chờ (giữ nguyên)
+    document.getElementById('queue-container').innerHTML = '<div class="list-item-placeholder">Chưa có trận đấu nào trong hàng chờ.</div>';
+}
+
+
 
 /**
  * Hàm khởi tạo chính cho module này

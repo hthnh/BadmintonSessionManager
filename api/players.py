@@ -18,6 +18,19 @@ def get_players():
     conn.close()
     return jsonify([dict(row) for row in players])
 
+@players_api.route('/players/<int:player_id>', methods=['GET'])
+def get_player_by_id(player_id):
+    conn = get_db_connection()
+    # Lấy tất cả các cột dữ liệu của người chơi
+    player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
+    conn.close()
+    if player is None:
+        return jsonify({'error': 'Không tìm thấy người chơi'}), 404
+    # Trả về dữ liệu của người chơi dưới dạng JSON
+    return jsonify(dict(player))
+
+
+
 
 @players_api.route('/players', methods=['POST'])
 def add_player():

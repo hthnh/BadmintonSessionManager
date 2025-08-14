@@ -34,76 +34,87 @@ def start_match():
     finally:
         conn.close()
 
+
+
 @matches_api.route('/matches/<int:match_id>/finish', methods=['POST'])
 def finish_match(match_id):
     data = request.get_json()
-    winning_team = data.get('winning_team')
-    if winning_team not in ['A', 'B']: return jsonify({'error': 'Đội thắng không hợp lệ'}), 400
+    score_a = data.get('score_A')
+    score_b = data.get('score_B')
+
+    # --- VALIDATION PHÍA BACKEND ---
+    # Đảm bảo dữ liệu gửi lên là hợp lệ
+    if score_a is None or score_b is None:
+        return jsonify({'error': 'Dữ liệu không hợp lệ, cần có score_A và score_B'}), 400
+
+    # Đảm bảo điểm số không bằng nhau
+    if score_a == score_b:
+        return jsonify({'error': 'Điểm số của hai đội không được bằng nhau.'}), 400
+
+    # Tự động quyết định đội thắng dựa trên điểm số
+    winning_team = 'A' if score_a > score_b else 'B'
+    # --------------------------------
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
+        # Lấy thông tin người chơi từ DB (giữ nguyên)
         players_rows = conn.execute(
             'SELECT p.id, p.elo_rating, p.total_matches_played, p.total_wins, mp.team, p.gender '
             'FROM players p JOIN match_players mp ON p.id = mp.player_id WHERE mp.match_id = ?', (match_id,)
         ).fetchall()
-
-        # === [SỬA LỖI] Chuyển đổi list các sqlite3.Row thành list các dict ===
         players = [dict(row) for row in players_rows]
-        # ===================================================================
+        if len(players) != 4:
+            return jsonify({'error': 'Không tìm thấy đủ người chơi cho trận đấu này'}), 404
 
-        if len(players) != 4: return jsonify({'error': 'Không tìm thấy đủ người chơi cho trận đấu này'}), 404
-        
+        # Phần còn lại của logic tính toán ELO giữ nguyên...
         team_a_players = [p for p in players if p['team'] == 'A']
         team_b_players = [p for p in players if p['team'] == 'B']
-        
         elo_team_a = (team_a_players[0]['elo_rating'] + team_a_players[1]['elo_rating']) / 2
         elo_team_b = (team_b_players[0]['elo_rating'] + team_b_players[1]['elo_rating']) / 2
-        
         expected_a = 1 / (1 + logic.ELO_BASE**((elo_team_b - elo_team_a) / logic.SCALING_FACTOR))
         result_for_a = 1 if winning_team == 'A' else 0
 
+        # ... (hàm update_player_stats và các vòng lặp for giữ nguyên) ...
         def update_player_stats(player, elo_change_amount, won_match):
             new_elo = player['elo_rating'] + elo_change_amount
             new_total_matches = player['total_matches_played'] + 1
             new_wins = player['total_wins'] + 1 if won_match else player['total_wins']
-            
             new_win_rate = new_wins / new_total_matches if new_total_matches > 0 else 0.0
-
             cursor.execute(
-                '''UPDATE players 
-                SET elo_rating = ?, 
-                    total_matches_played = ?, 
-                    total_wins = ?, 
-                    win_rate = ?, 
-                    last_played_date = CURRENT_TIMESTAMP 
-                WHERE id = ?''',
+                '''UPDATE players SET elo_rating = ?, total_matches_played = ?, total_wins = ?, win_rate = ?, last_played_date = CURRENT_TIMESTAMP WHERE id = ?''',
                 (new_elo, new_total_matches, new_wins, new_win_rate, player['id'])
             )
-            cursor.execute('UPDATE match_players SET elo_after = ? WHERE match_id = ? AND player_id = ?', 
+            cursor.execute('UPDATE match_players SET elo_after = ? WHERE match_id = ? AND player_id = ?',
                         (new_elo, match_id, player['id']))
         for p in team_a_players:
             k_factor = logic.get_dynamic_k_factor(p)
             elo_change = k_factor * (result_for_a - expected_a)
             update_player_stats(p, elo_change, winning_team == 'A')
-
         for p in team_b_players:
             k_factor = logic.get_dynamic_k_factor(p)
             elo_change = - (k_factor * (result_for_a - expected_a))
             update_player_stats(p, elo_change, winning_team == 'B')
-
         logic.update_pair_history(team_a_players, cursor)
         logic.update_pair_history(team_b_players, cursor)
 
-        cursor.execute("UPDATE matches SET status = 'finished', end_time = CURRENT_TIMESTAMP, winning_team = ? WHERE id = ?", (winning_team, match_id))
+
+        # --- CẬP NHẬT CÂU LỆNH SQL CUỐI CÙNG ---
+        # Giờ đây nó sẽ lưu cả điểm số
+        cursor.execute("""
+            UPDATE matches SET status = 'finished', end_time = CURRENT_TIMESTAMP, winning_team = ?, score_A = ?, score_B = ?
+            WHERE id = ?
+        """, (winning_team, score_a, score_b, match_id))
+        # --------------------------------------
+
         conn.commit()
-        return jsonify({'message': 'Trận đấu đã kết thúc. ELO và lịch sử cặp đôi đã được cập nhật.'}), 200
+        return jsonify({'message': 'Trận đấu đã kết thúc. ELO, điểm số và lịch sử cặp đôi đã được cập nhật.'}), 200
     except sqlite3.Error as e:
         conn.rollback()
         return jsonify({'error': f'Lỗi database: {e}'}), 500
     finally:
         conn.close()
 
-# ... (các hàm còn lại giữ nguyên) ...
 
 @matches_api.route('/matches/ongoing', methods=['GET'])
 def get_ongoing_matches():
@@ -162,17 +173,21 @@ def create_match():
         conn.close()
 
 
+
 @matches_api.route('/matches/history', methods=['GET'])
 def get_match_history():
     """
     Lấy lịch sử tất cả các trận đấu đã kết thúc.
     """
+    # === CẬP NHẬT CÂU LỆNH QUERY: Thêm m.score_A, m.score_B ===
     query = """
         SELECT
             m.id as match_id,
             m.start_time,
             m.end_time,
             m.winning_team,
+            m.score_A,
+            m.score_B,
             c.name as court_name,
             p.id as player_id,
             p.name as player_name,
@@ -186,6 +201,7 @@ def get_match_history():
         WHERE m.status = 'finished'
         ORDER BY m.end_time DESC, m.id, mp.team;
     """
+    # ==========================================================
     conn = get_db_connection()
     rows = conn.execute(query).fetchall()
     conn.close()
@@ -200,10 +216,14 @@ def get_match_history():
                 'start_time': row['start_time'],
                 'end_time': row['end_time'],
                 'winning_team': row['winning_team'],
+                # === THÊM DỮ LIỆU ĐIỂM SỐ VÀO KẾT QUẢ TRẢ VỀ ===
+                'score_A': row['score_A'],
+                'score_B': row['score_B'],
+                # ===============================================
                 'team_A': [],
                 'team_B': []
             }
-        
+
         elo_change = (row['elo_after'] - row['elo_before']) if row['elo_after'] is not None else 0
         player_info = {
             'id': row['player_id'],

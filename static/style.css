@@ -447,3 +447,101 @@ hr {
 .score-btn {
     padding: 0.2rem 0.6rem;
 }
+
+/* === CSS CHO LỊCH SỬ TÓM TẮT TRÊN DASHBOARD === */
+
+.history-item-summary {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    transition: background-color 0.2s;
+}
+
+.history-item-summary:last-child {
+    border-bottom: none;
+}
+
+.history-item-summary:hover {
+    background-color: #f8f9fa;
+}
+
+.history-item-summary__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.winner-tag {
+    font-weight: 700;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    color: white;
+}
+
+.winner-tag.winner-A {
+    background-color: #198754; /* Màu xanh lá */
+}
+
+.winner-tag.winner-B {
+    background-color: #0d6efd; /* Màu xanh dương */
+}
+
+.history-item-summary__body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--color-secondary);
+    font-size: 0.85rem;
+}
+
+.vs-divider-summary {
+    font-weight: 700;
+    color: var(--color-primary);
+}
+
+
+.team-winner-summary {
+    font-weight: 700;
+    color: var(--color-dark);
+}
+
+/* Thêm vào cuối file static/style.css */
+
+/* Ghi đè lại style cũ của body */
+.history-item-summary__body {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--color-secondary);
+    font-size: 0.9rem;
+    padding-top: 0.25rem;
+}
+
+/* Style cho tên đội */
+.team-name-summary {
+    flex: 1; /* Cho phép tên đội co giãn */
+}
+.team-name-summary:first-child {
+    text-align: left;
+}
+.team-name-summary:last-child {
+    text-align: right;
+}
+
+/* Style cho ô điểm số ở giữa */
+.score-summary {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-dark);
+    background-color: #e9ecef;
+    padding: 0.3rem 0.8rem;
+    border-radius: var(--border-radius);
+    margin: 0 1rem; /* Tạo khoảng cách với tên đội */
+}
+
+/* Xóa đi style cũ không cần thiết */
+.vs-divider-summary {
+    display: none;
+}
