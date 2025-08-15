@@ -100,9 +100,6 @@
         </main>
     </div>
 
-
-
-
     <div id="attendance-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -117,12 +114,36 @@
         </div>
     </div>
 
+    <div id="finish-match-modal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2 id="finish-modal-title">Kết thúc trận đấu</h2>
+                <span id="close-finish-modal" class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="finish-match-form" onsubmit="return false;">
+                    <input type="hidden" id="finish-match-id-input">
+                    <p>Vui lòng nhập điểm số cuối cùng của trận đấu.</p>
+                    <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; margin: 1.5rem 0;">
+                        <div class="form-group">
+                            <label for="score-a-input" style="font-size: 1.2rem; font-weight: 700;">Đội A</label>
+                            <input type="number" id="score-a-input" required min="0" style="text-align: center; font-size: 1.5rem; padding: 0.5rem;">
+                        </div>
+                        <span style="font-size: 2rem; font-weight: 700;">-</span>
+                        <div class="form-group">
+                            <label for="score-b-input" style="font-size: 1.2rem; font-weight: 700;">Đội B</label>
+                            <input type="number" id="score-b-input" required min="0" style="text-align: center; font-size: 1.5rem; padding: 0.5rem;">
+                        </div>
+                    </div>
+                    <p id="finish-modal-error" style="color: #dc3545; text-align: center; display: none; font-weight: 700;">Điểm số không hợp lệ. Hai đội không được hòa nhau.</p>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="save-match-result-btn" class="button button--primary">Lưu kết quả</button>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
-
-
-
-
-
-
 </body>
 </html>

@@ -31,20 +31,17 @@ def get_player_by_id(player_id):
 
 
 
-
 @players_api.route('/players', methods=['POST'])
 def add_player():
     new_player = request.get_json()
     if not new_player or not new_player.get('name'):
         return jsonify({'error': 'Thiếu tên người chơi'}), 400
 
-    # Lấy tất cả các giá trị từ form, với giá trị mặc định nếu có
     name = new_player.get('name')
     player_type = new_player.get('type', 'Vãng lai')
     gender = new_player.get('gender', 'Nam')
     contact_info = new_player.get('contact_info', None)
     
-    # Lấy các giá trị nâng cao, nếu người dùng cung cấp
     elo = new_player.get('elo_rating', 1500)
     k_factor = new_player.get('k_factor', 32)
     provisional_games_left = new_player.get('provisional_games_left', 5)
@@ -52,10 +49,10 @@ def add_player():
 
     try:
         conn = get_db_connection()
-        # Thêm các trường mới vào câu lệnh SQL
+        # Thêm các trường mới và sử dụng giờ địa phương cho join_date
         conn.execute('''
-            INSERT INTO players (name, type, gender, contact_info, elo_rating, k_factor, provisional_games_left, rank_tier) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO players (name, type, gender, contact_info, elo_rating, k_factor, provisional_games_left, rank_tier, join_date) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
             ''',
             (name, player_type, gender, contact_info, elo, k_factor, provisional_games_left, rank_tier))
         conn.commit()
@@ -63,14 +60,12 @@ def add_player():
         return jsonify({'message': f'Đã thêm thành công người chơi {name}'}), 201
     except sqlite3.IntegrityError:
         return jsonify({'error': 'Lỗi khi thêm người chơi'}), 500
-    
 
 @players_api.route('/players/<int:player_id>', methods=['PUT'])
 def update_player(player_id):
     data = request.get_json()
     if not data: return jsonify({'error': 'Không có dữ liệu để cập nhật'}), 400
 
-    # Mở rộng danh sách các trường được phép cập nhật
     allowed_fields = [
         'name', 'type', 'is_active', 'elo_rating', 'gender', 
         'contact_info', 'k_factor', 'provisional_games_left', 'rank_tier'
@@ -87,6 +82,7 @@ def update_player(player_id):
     if not fields_to_update: return jsonify({'error': 'Không có trường hợp lệ nào để cập nhật'}), 400
     
     values.append(player_id)
+    # Câu lệnh SQL không cần thay đổi vì last_played_date được cập nhật ở finish_match
     sql = f"UPDATE players SET {', '.join(fields_to_update)} WHERE id = ?"
     
     conn = get_db_connection()
@@ -100,7 +96,6 @@ def update_player(player_id):
     
     conn.close()
     return jsonify({'message': f'Cập nhật thành công người chơi ID {player_id}'})
-
 
 @players_api.route('/players/<int:player_id>', methods=['DELETE'])
 def delete_player(player_id):

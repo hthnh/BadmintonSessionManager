@@ -545,3 +545,337 @@ hr {
 .vs-divider-summary {
     display: none;
 }
+
+
+/* === CSS CHO ONGOING MATCH CARD TRÊN DASHBOARD === */
+
+.ongoing-match-card {
+    border-left: 5px solid #fd7e14; /* Màu cam cho trạng thái đang diễn ra */
+}
+
+.ongoing-match-card .history-card__footer {
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end; /* Đẩy nút qua phải */
+    align-items: center;
+    background-color: #f8f9fa;
+}
+
+/* Style cho khu vực nhập điểm */
+.score-display-ongoing {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--color-dark);
+}
+
+/* Style cho từng ô input điểm */
+.score-input {
+    width: 70px; /* Độ rộng vừa phải */
+    height: 50px;
+    font-size: 1.8rem;
+    text-align: center;
+    font-weight: 700;
+    border: 2px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background-color: #e9ecef;
+}
+
+.score-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background-color: white;
+}
+
+
+
+/* === CSS CHO TRẬN ĐANG DIỄN RA (V2) === */
+
+.history-item-v2.ongoing {
+    border-left: 5px solid #fd7e14; /* Màu cam cho trạng thái đang diễn ra */
+}
+
+.status-tag {
+    font-weight: 700;
+    padding: 0.3rem 0.8rem;
+    border-radius: var(--border-radius);
+    font-size: 0.8rem;
+    color: #fd7e14;
+    background-color: #fff3e0;
+    border: 1px solid #ffe0b2;
+}
+
+.score-input-box {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-dark);
+    margin: 0 1.5rem;
+}
+
+.score-input-box .score-input {
+    width: 60px;
+    height: 45px;
+    font-size: 1.5rem;
+    text-align: center;
+    font-weight: 700;
+    border: 2px solid var(--color-border);
+    border-radius: var(--border-radius);
+    background-color: white;
+}
+
+.score-input-box .score-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.history-item-v2__footer {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+}
+
+
+/* =================================================================== */
+/* === [SỬA LỖI] CSS CHO LỊCH SỬ & TRẬN ĐANG DIỄN RA (DASHBOARD) === */
+/* =================================================================== */
+
+/* -- Container chính cho mỗi mục -- */
+.history-item-v2 {
+    display: block; /* Đảm bảo nó là một block container */
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    transition: background-color 0.2s;
+}
+.history-item-v2:last-child {
+    border-bottom: none;
+}
+.history-item-v2:hover {
+    background-color: #f8f9fa;
+}
+.history-item-v2.ongoing {
+    border-left: 5px solid #fd7e14; /* Đường viền cam cho trận đang diễn ra */
+}
+
+/* -- Header: Tên sân & Tag trạng thái -- */
+.history-item-v2__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+}
+
+/* Tag "Đội B thắng" */
+.winner-tag {
+    font-weight: 700;
+    padding: 0.3rem 0.8rem;
+    border-radius: var(--border-radius);
+    font-size: 0.8rem;
+    color: white;
+}
+.winner-tag.winner-A { background-color: #198754; }
+.winner-tag.winner-B { background-color: #0d6efd; }
+
+/* Tag "Đang diễn ra" */
+.status-tag {
+    font-weight: 700;
+    padding: 0.3rem 0.8rem;
+    border-radius: var(--border-radius);
+    font-size: 0.8rem;
+    color: #fd7e14;
+    background-color: #fff3e0;
+    border: 1px solid #ffe0b2;
+}
+
+/* -- Body: Nơi chứa Tên đội và Điểm số -- */
+.history-item-v2__body {
+    display: flex;
+    flex-direction: row; /* QUAN TRỌNG: Ép buộc hiển thị theo hàng ngang */
+    justify-content: space-between; /* Căn đều các phần tử */
+    align-items: center; /* Căn giữa theo chiều dọc */
+    width: 100%;
+}
+
+/* Tên đội */
+.team-name {
+    flex: 1; /* Cho phép tên đội co giãn, chiếm không gian thừa */
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--color-secondary);
+}
+.team-name:first-of-type {
+    text-align: left;
+}
+.team-name:last-of-type {
+    text-align: right;
+}
+.team-winner {
+    font-weight: 700;
+    color: var(--color-dark);
+}
+
+/* Hộp điểm tĩnh (trong Lịch sử) */
+.score-box {
+    flex: 0 0 auto; /* Không co giãn, giữ kích thước tự nhiên */
+    font-size: 1.5rem;
+    font-weight: 700;
+    background-color: #e9ecef;
+    padding: 0.4rem 1.2rem;
+    border-radius: var(--border-radius);
+    margin: 0 1.5rem; /* Khoảng cách với tên đội */
+}
+
+/* Hộp nhập điểm (trong Trận đang diễn ra) */
+.score-input-box {
+    flex: 0 0 auto; /* Không co giãn */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 1.5rem; /* Khoảng cách với tên đội */
+}
+.score-input-box .score-input {
+    width: 60px;
+    height: 45px;
+    font-size: 1.5rem;
+    text-align: center;
+    border: 2px solid var(--color-border);
+    border-radius: var(--border-radius);
+}
+.score-input-box .score-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+/* -- Footer: Nút "Kết thúc & Lưu" -- */
+.history-item-v2__footer {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+}
+
+/* ======================================================= */
+/* === CSS CHO TRANG TẠO TRẬN ĐẤU (QUY TRÌNH MỚI) === */
+/* ======================================================= */
+
+.creation-v2-container {
+    display: grid;
+    grid-template-columns: 1.5fr 2fr 1.5fr; /* 3 cột */
+    gap: 1.5rem;
+    padding: 1.5rem;
+    align-items: flex-start;
+    height: calc(100vh - 70px);
+}
+
+.card-header-badge {
+    background-color: var(--color-primary);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.card__actions-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.player-selection-list, .pairings-selection-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.player-select-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.player-select-item:hover { background-color: #f0f2f5; }
+.player-select-item input[type="checkbox"] { width: 20px; height: 20px; cursor: pointer; }
+.player-select-item label { flex-grow: 1; cursor: pointer; }
+
+.generation-zone {
+    text-align: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 1rem;
+}
+.generation-zone p { margin-bottom: 1rem; color: var(--color-secondary); }
+
+.pairing-item {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.pairing-item:hover {
+    border-color: var(--color-primary);
+    box-shadow: var(--box-shadow);
+}
+.pairing-item.selected {
+    background-color: #e7f1ff;
+    border-color: var(--color-primary);
+    font-weight: 700;
+}
+
+.confirmation-zone .pairing-card {
+    border: 2px solid var(--color-primary);
+    padding: 1.5rem;
+}
+.confirmation-zone .pairing-card__teams {
+    font-size: 1.1rem;
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+.confirmation-zone .pairing-card__court-selector label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+.confirmation-zone .button {
+    width: 100%;
+    margin-top: 1rem;
+}
+
+/* Thêm vào cuối file static/style.css */
+.rest-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #856404; /* Màu vàng đậm */
+    background-color: #fff3cd; /* Màu vàng nhạt */
+    border: 1px solid #ffeeba;
+    border-radius: 10px;
+    vertical-align: middle;
+}
+
+.player-select-item input[disabled] + label {
+    color: var(--color-secondary);
+    cursor: not-allowed;
+    text-decoration: line-through;
+}

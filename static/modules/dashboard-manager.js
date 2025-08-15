@@ -1,7 +1,6 @@
-// static/modules/dashboard-manager.js (Đã cập nhật theo yêu cầu mới)
+// static/modules/dashboard-manager.js (Phiên bản đã sửa lỗi và dọn dẹp)
 
-// Biến toàn cục để lưu trữ danh sách người chơi, tránh gọi API nhiều lần
-let allPlayers = [];
+let allPlayers = []; // Biến toàn cục
 
 /**
  * Hàm trợ giúp chung để gọi API
@@ -34,7 +33,9 @@ async function apiCall(url, method = 'GET', body = null) {
 
 // === CÁC HÀM RENDER GIAO DIỆN ===
 
-/** Hiển thị danh sách người chơi đang có mặt */
+/**
+ * Render danh sách người chơi đang có mặt
+ */
 function renderActivePlayers() {
     const container = document.getElementById('active-players-container');
     container.innerHTML = '';
@@ -51,43 +52,116 @@ function renderActivePlayers() {
     });
 }
 
-/** Hiển thị các trận đang diễn ra */
-function renderOngoingMatches(matches) {
-    const container = document.getElementById('active-courts-container');
+/**
+ * Render các trận trong hàng chờ (queue)
+ */
+function renderQueuedMatches(matches) {
+    const container = document.getElementById('queue-container');
     container.innerHTML = '';
-
     if (!matches || matches.length === 0) {
-        container.innerHTML = '<div class="list-item-placeholder">Chưa có sân nào hoạt động.</div>';
+        container.innerHTML = '<div class="list-item-placeholder">Chưa có trận đấu nào trong hàng chờ.</div>';
         return;
     }
-
     matches.forEach(match => {
         const div = document.createElement('div');
-        div.className = 'match-card ongoing-match';
+        div.className = 'history-item-v2 queued';
+        const teamAPlayers = match.team_A.map(p => p.name.split(' ').pop()).join(' & ');
+        const teamBPlayers = match.team_B.map(p => p.name.split(' ').pop()).join(' & ');
         div.innerHTML = `
-            <div class="match-card__header">
+            <div class="history-item-v2__header">
                 <strong>Sân ${match.court_name}</strong>
+                <span class="status-tag queued-tag">Đang chờ</span>
             </div>
-            <div class="match-card__teams">
-                <div class="team team-a"><span>${match.team_A[0].name}</span><span>${match.team_A[1].name}</span></div>
-                <div class="vs-divider">VS</div>
-                <div class="team team-b"><span>${match.team_B[0].name}</span><span>${match.team_B[1].name}</span></div>
+            <div class="history-item-v2__body">
+                <span class="team-name">${teamAPlayers}</span>
+                <strong class="vs-separator-queue">VS</strong>
+                <span class="team-name">${teamBPlayers}</span>
             </div>
-            <div class="match-card__actions finish-actions">
-                <span>Đội thắng:</span>
-                <button class="button button--secondary finish-match-btn" data-match-id="${match.id}" data-winning-team="A">Đội A</button>
-                <button class="button button--secondary finish-match-btn" data-match-id="${match.id}" data-winning-team="B">Đội B</button>
+            <div class="history-item-v2__footer">
+                 <button class="button button--primary begin-match-btn" data-match-id="${match.id}">Bắt đầu trận</button>
             </div>
         `;
         container.appendChild(div);
     });
 }
 
-/** Hiển thị danh sách người chơi trong popup điểm danh */
+/**
+ * Render các trận đang diễn ra (ongoing)
+ */
+function renderOngoingMatches(matches) {
+    const container = document.getElementById('active-courts-container');
+    container.innerHTML = '';
+    if (!matches || matches.length === 0) {
+        container.innerHTML = '<div class="list-item-placeholder">Chưa có sân nào hoạt động.</div>';
+        return;
+    }
+    matches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'history-item-v2 ongoing';
+        div.dataset.matchId = match.id;
+        const teamAPlayers = match.team_A.map(p => p.name.split(' ').pop()).join(' & ');
+        const teamBPlayers = match.team_B.map(p => p.name.split(' ').pop()).join(' & ');
+        div.innerHTML = `
+            <div class="history-item-v2__header">
+                <strong>Sân ${match.court_name}</strong>
+                <span class="status-tag">Đang diễn ra</span>
+            </div>
+            <div class="history-item-v2__body">
+                <span class="team-name">${teamAPlayers}</span>
+                <span class="score-input-box">
+                     <input type="number" class="score-input" id="score-a-${match.id}" min="0">
+                     -
+                     <input type="number" class="score-input" id="score-b-${match.id}" min="0">
+                </span>
+                <span class="team-name">${teamBPlayers}</span>
+            </div>
+            <div class="history-item-v2__footer">
+                 <button class="button button--primary finish-match-btn" data-match-id="${match.id}">Kết thúc & Lưu</button>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+/**
+ * Render lịch sử tóm tắt trên dashboard
+ */
+function renderDashboardHistory(matches) {
+    const container = document.getElementById('match-history-container');
+    container.innerHTML = '';
+    if (!matches || matches.length === 0) {
+        container.innerHTML = '<div class="list-item-placeholder">Chưa có lịch sử trận đấu.</div>';
+        return;
+    }
+    const recentMatches = matches.slice(0, 10);
+    recentMatches.forEach(match => {
+        const div = document.createElement('div');
+        div.className = 'history-item-v2';
+        const teamAPlayers = match.team_A.map(p => p.name.split(' ').pop()).join(' & ');
+        const teamBPlayers = match.team_B.map(p => p.name.split(' ').pop()).join(' & ');
+        div.innerHTML = `
+            <div class="history-item-v2__header">
+                <strong>Sân ${match.court_name}</strong>
+                <span class="winner-tag winner-${match.winning_team}">
+                    Đội ${match.winning_team} thắng
+                </span>
+            </div>
+            <div class="history-item-v2__body">
+                <span class="team-name ${match.winning_team === 'A' ? 'team-winner' : ''}">${teamAPlayers}</span>
+                <span class="score-box">${match.score_A} - ${match.score_B}</span>
+                <span class="team-name ${match.winning_team === 'B' ? 'team-winner' : ''}">${teamBPlayers}</span>
+            </div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+/**
+ * Render danh sách người chơi trong popup điểm danh
+ */
 function renderAttendanceModal() {
     const container = document.getElementById('attendance-list-container');
     container.innerHTML = '';
-    // Sắp xếp người chơi theo tên để dễ tìm
     allPlayers.sort((a, b) => a.name.localeCompare(b.name)).forEach(player => {
         const div = document.createElement('div');
         div.className = 'attendance-item';
@@ -99,24 +173,98 @@ function renderAttendanceModal() {
     });
 }
 
+
+// === HÀM TRUNG TÂM ===
+
+/**
+ * Lấy và hiển thị lại toàn bộ dữ liệu trên dashboard
+ */
+async function refreshDashboard() {
+    const [players, ongoing, history, queued] = await Promise.all([
+        apiCall('/api/players'),
+        apiCall('/api/matches/ongoing'),
+        apiCall('/api/matches/history'),
+        apiCall('/api/matches/queued') // Gọi API lấy hàng chờ
+    ]);
+
+    allPlayers = players || [];
+    renderActivePlayers();
+    renderOngoingMatches(ongoing);
+    renderDashboardHistory(history);
+    renderQueuedMatches(queued); // Render hàng chờ
+}
+
+
 // === CÁC HÀM XỬ LÝ SỰ KIỆN ===
 
-/** Lấy và hiển thị lại toàn bộ dữ liệu trên dashboard */
+/**
+ * Xử lý khi bấm nút "Bắt đầu trận" từ hàng chờ
+ */
+async function handleBeginMatch(e) {
+    if (!e.target.classList.contains('begin-match-btn')) return;
+    const matchId = e.target.dataset.matchId;
+    if (!matchId) return;
 
-/** Xử lý khi bấm nút chọn đội thắng để kết thúc trận */
-async function handleFinishMatchClick(event) {
-    if (!event.target.classList.contains('finish-match-btn')) return;
-    const button = event.target;
-    const matchId = button.dataset.matchId;
-    const winningTeam = button.dataset.winningTeam;
-    const result = await apiCall(`/api/matches/${matchId}/finish`, 'POST', { winning_team: winningTeam });
-    if (result) {
-        alert(result.message);
-        refreshDashboard();
+    if (confirm('Bạn có chắc muốn bắt đầu trận đấu này?')) {
+        const result = await apiCall(`/api/matches/${matchId}/begin`, 'POST');
+        if (result) {
+            alert(result.message);
+            await refreshDashboard();
+        }
     }
 }
 
-/** Xử lý khi bấm nút lưu điểm danh */
+/**
+ * Xử lý khi bấm nút "Kết thúc & Lưu"
+ */
+function handleFinishMatchClick(event) {
+    if (!event.target.classList.contains('finish-match-btn')) return;
+    
+    const matchId = event.target.dataset.matchId;
+    const scoreA = document.getElementById(`score-a-${matchId}`).value;
+    const scoreB = document.getElementById(`score-b-${matchId}`).value;
+
+    const modal = document.getElementById('finish-match-modal');
+    modal.querySelector('#finish-match-id-input').value = matchId;
+    modal.querySelector('#score-a-input').value = scoreA;
+    modal.querySelector('#score-b-input').value = scoreB;
+    modal.style.display = 'block';
+    document.getElementById('finish-modal-error').style.display = 'none';
+    modal.querySelector('#score-a-input').focus();
+}
+
+/**
+ * Xử lý khi lưu kết quả từ modal kết thúc trận
+ */
+async function handleSaveMatchResult() {
+    const modal = document.getElementById('finish-match-modal');
+    const matchId = modal.querySelector('#finish-match-id-input').value;
+    const scoreA = parseInt(document.getElementById('score-a-input').value, 10);
+    const scoreB = parseInt(document.getElementById('score-b-input').value, 10);
+    const errorP = document.getElementById('finish-modal-error');
+
+    if (isNaN(scoreA) || isNaN(scoreB) || scoreA === scoreB) {
+        errorP.style.display = 'block';
+        return;
+    }
+    errorP.style.display = 'none';
+
+    const result = await apiCall(`/api/matches/${matchId}/finish`, 'POST', {
+        score_A: scoreA,
+        score_B: scoreB,
+    });
+
+    if (result) {
+        alert(result.message);
+        modal.style.display = 'none';
+        document.getElementById('finish-match-form').reset();
+        await refreshDashboard();
+    }
+}
+
+/**
+ * Xử lý khi lưu điểm danh
+ */
 async function handleAttendanceSave() {
     const modal = document.getElementById('attendance-modal');
     const checkboxes = modal.querySelectorAll('input[type="checkbox"]');
@@ -135,106 +283,46 @@ async function handleAttendanceSave() {
         await Promise.all(promises);
         alert('Đã cập nhật điểm danh thành công!');
     }
-
     modal.style.display = 'none';
-    refreshDashboard();
-}
-
-function renderDashboardHistory(matches) {
-    const container = document.getElementById('match-history-container');
-    container.innerHTML = '';
-
-    if (!matches || matches.length === 0) {
-        container.innerHTML = '<div class="list-item-placeholder">Chưa có lịch sử trận đấu.</div>';
-        return;
-    }
-
-    const recentMatches = matches.slice(0, 7);
-
-    recentMatches.forEach(match => {
-        const div = document.createElement('div');
-        div.className = 'history-item-summary';
-
-        const teamAPlayers = match.team_A.map(p => p.name.split(' ').pop()).join(' & ');
-        const teamBPlayers = match.team_B.map(p => p.name.split(' ').pop()).join(' & ');
-
-        // === THAY ĐỔI CẤU TRÚC HTML Ở ĐÂY ===
-        div.innerHTML = `
-            <div class="history-item-summary__header">
-                <strong>Sân ${match.court_name}</strong>
-                <span class="winner-tag winner-${match.winning_team}">
-                    Đội ${match.winning_team} thắng
-                </span>
-            </div>
-            <div class="history-item-summary__body">
-                <span class="team-name-summary ${match.winning_team === 'A' ? 'team-winner-summary' : ''}">${teamAPlayers}</span>
-                <span class="score-summary">${match.score_A} - ${match.score_B}</span>
-                <span class="team-name-summary ${match.winning_team === 'B' ? 'team-winner-summary' : ''}">${teamBPlayers}</span>
-            </div>
-        `;
-        // ===================================
-        container.appendChild(div);
-    });
+    await refreshDashboard();
 }
 
 
-async function refreshDashboard() {
-    // Sử dụng Promise.all để tải các dữ liệu song song, tăng tốc độ load
-    const [players, ongoingMatches, history] = await Promise.all([
-        apiCall('/api/players'),
-        apiCall('/api/matches/ongoing'),
-        apiCall('/api/matches/history') // <-- Thêm dòng này
-    ]);
-
-    allPlayers = players || [];
-    renderActivePlayers();
-    renderOngoingMatches(ongoingMatches);
-    renderDashboardHistory(history); // <-- Thêm dòng này
-
-    // Cập nhật hàng chờ (giữ nguyên)
-    document.getElementById('queue-container').innerHTML = '<div class="list-item-placeholder">Chưa có trận đấu nào trong hàng chờ.</div>';
-}
-
-
+// === KHỞI TẠO ===
 
 /**
  * Hàm khởi tạo chính cho module này
  */
 export default function init() {
-    // Tải dữ liệu lần đầu
     refreshDashboard();
 
-    // Gán sự kiện cho các nút
-    document.getElementById('manage-courts-btn').addEventListener('click', () => {
-        window.location.href = '/manage-courts';
-    });
-    
-    // [ĐÃ SỬA] Nút "Tạo trận" sẽ điều hướng đến trang tạo thủ công
-    document.getElementById('suggest-btn').addEventListener('click', () => {
-        window.location.href = '/create';
-    });
+    // --- Gán sự kiện cho các nút tĩnh ---
+    document.getElementById('manage-courts-btn').addEventListener('click', () => { window.location.href = '/manage-courts'; });
+    document.getElementById('suggest-btn').addEventListener('click', () => { window.location.href = '/create'; });
+    document.getElementById('export-history-btn').addEventListener('click', () => { window.location.href = '/history'; });
 
-    document.getElementById('export-history-btn').addEventListener('click', () => {
-        window.location.href = '/history';
-    });
-
-    // Gán sự kiện cho popup điểm danh
-    const modal = document.getElementById('attendance-modal');
+    // --- Gán sự kiện cho các modal ---
+    const attendanceModal = document.getElementById('attendance-modal');
     document.getElementById('attendance-btn').addEventListener('click', async () => {
         if (allPlayers.length === 0) {
             allPlayers = await apiCall('/api/players') || [];
         }
         renderAttendanceModal();
-        modal.style.display = 'block';
+        attendanceModal.style.display = 'block';
     });
-    document.getElementById('close-attendance-modal').addEventListener('click', () => modal.style.display = 'none');
+    document.getElementById('close-attendance-modal').addEventListener('click', () => attendanceModal.style.display = 'none');
     document.getElementById('save-attendance-btn').addEventListener('click', handleAttendanceSave);
+    
+    const finishModal = document.getElementById('finish-match-modal');
+    document.getElementById('close-finish-modal').addEventListener('click', () => finishModal.style.display = 'none');
+    document.getElementById('save-match-result-btn').addEventListener('click', handleSaveMatchResult);
+
     window.addEventListener('click', (event) => {
-        if (event.target == modal) {
-            modal.style.display = 'none';
-        }
+        if (event.target == attendanceModal) attendanceModal.style.display = 'none';
+        if (event.target == finishModal) finishModal.style.display = 'none';
     });
 
-    // Event delegation
+    // --- Sử dụng Event Delegation cho các nút động ---
+    document.getElementById('queue-container').addEventListener('click', handleBeginMatch);
     document.getElementById('active-courts-container').addEventListener('click', handleFinishMatchClick);
 }

@@ -55,18 +55,30 @@ def suggest_matches(active_players, empty_courts, rules, conn):
     
     possible_groups = list(itertools.combinations(active_players, 4))
     scored_groups = []
+
+    # Lấy thời gian hiện tại một lần để nhất quán
+    now = datetime.now()
+
     for group in possible_groups:
         pairing, elo_diff = find_best_pairing_for_group(group)
         score = elo_diff
         
         # Các quy tắc tính điểm
         if rules.get('prioritize_rest'):
-            now = datetime.now()
-            total_rest_time = sum(
-                (now - datetime.fromisoformat(p['last_played_date'])).total_seconds() if p['last_played_date'] else 999999
-                for p in group
-            )
-            if total_rest_time > 0: score -= (total_rest_time / 4) * REST_PRIORITY_WEIGHT
+            total_rest_time = 0
+            for p in group:
+                if p['last_played_date']:
+                    # Chuyển đổi chuỗi ISO thành đối tượng datetime
+                    # Giả định last_played_date từ DB đã là giờ địa phương
+                    last_played = datetime.fromisoformat(p['last_played_date'])
+                    total_rest_time += (now - last_played).total_seconds()
+                else:
+                    # Nếu chưa chơi trận nào, cho điểm ưu tiên cao
+                    total_rest_time += 999999 
+            
+            if total_rest_time > 0:
+                score -= (total_rest_time / 4) * REST_PRIORITY_WEIGHT
+
         if rules.get('prioritize_low_games'):
             score += sum(p['total_matches_played'] for p in group) * LOW_GAMES_PENALTY_WEIGHT
         if rules.get('avoid_rematch'):
@@ -102,6 +114,8 @@ def suggest_matches(active_players, empty_courts, rules, conn):
         if len(suggestions) >= num_matches_to_suggest: break
             
     return suggestions
+
+
 
 def update_pair_history(team_players, cursor):
     """Cập nhật bảng pair_history cho một đội gồm 2 người chơi."""
