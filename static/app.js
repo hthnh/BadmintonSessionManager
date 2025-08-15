@@ -6,7 +6,7 @@ import initDashboardManager from './modules/dashboard-manager.js';
 import initCourtManager from './modules/court-manager.js';
 import initHistoryManager from './modules/history-manager.js'; 
 import initCreateManager from './modules/create-manager.js';
-
+import initSettingsManager from './modules/settings-manager.js';
 /**
  * Hàm cập nhật đồng hồ ở sidebar
  */
@@ -43,8 +43,9 @@ function initializeApp() {
         initCreateManager();
     } else if (path === '/') {
         initDashboardManager();
+    }else if (path.includes('/settings')) { // Thêm điều kiện này
+        initSettingsManager();
     }
-
     console.log("Ứng dụng đã khởi tạo thành công!");
 }
 
