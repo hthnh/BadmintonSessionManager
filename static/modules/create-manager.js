@@ -1,11 +1,12 @@
-// static/modules/create-manager.js (Sử dụng API Suggest)
+// static/modules/create-manager.js (Phiên bản Sửa lỗi TypeError)
 
 // === STATE MANAGEMENT ===
-let allPlayers = [];
+let availablePlayers = [];
 let availableCourts = [];
-let selectedPlayerIds = new Set();
-let suggestedMatches = []; // Thay cho generatedPairings
-let confirmedMatch = null;
+let courtSlots = {
+    teamA: [],
+    teamB: []
+};
 
 // === API CALLS ===
 async function apiCall(url, method = 'GET', body = null) {
@@ -17,9 +18,8 @@ async function apiCall(url, method = 'GET', body = null) {
             const errorData = await response.json();
             throw new Error(errorData.error || `Lỗi server: ${response.status}`);
         }
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) return response.json();
-        return { success: true, message: "Thao tác thành công!" };
+        if (response.status === 204) return { success: true };
+        return response.json();
     } catch (error) {
         console.error(`Lỗi API call đến ${url}:`, error);
         alert(`Đã xảy ra lỗi: ${error.message}`);
@@ -29,208 +29,213 @@ async function apiCall(url, method = 'GET', body = null) {
 
 // === RENDERING LOGIC ===
 
-// Render mục 1: Danh sách người chơi
-function renderPlayerList() {
+function renderAvailablePlayerList() {
     const container = document.getElementById('player-list-container');
     container.innerHTML = '';
-    allPlayers.sort((a,b) => a.name.localeCompare(b.name)).forEach(player => {
-        const isChecked = selectedPlayerIds.has(player.id);
-        const mustRest = player.consecutive_matches >= 2;
-        const disabledAttr = mustRest ? 'disabled' : '';
+    const playersOnCourtIds = new Set([...courtSlots.teamA, ...courtSlots.teamB]);
 
-        const div = document.createElement('div');
-        div.className = 'player-select-item';
-        div.innerHTML = `
-            <input type="checkbox" id="player-${player.id}" data-player-id="${player.id}" ${isChecked ? 'checked' : ''} ${disabledAttr}>
-            <label for="player-${player.id}">
-                ${player.name} (ELO: ${Math.round(player.elo_rating)})
-                ${mustRest ? '<span class="rest-badge">Cần nghỉ</span>' : ''}
-            </label>
-        `;
-        container.appendChild(div);
+    availablePlayers.sort((a, b) => a.name.localeCompare(b.name))
+        .forEach(player => {
+            const div = document.createElement('div');
+            div.className = 'player-select-item';
+            div.dataset.playerId = player.id;
+            div.draggable = true;
+
+            if (playersOnCourtIds.has(player.id)) {
+                div.classList.add('on-court');
+            }
+
+            div.innerHTML = `<label>${player.name} (ELO: ${Math.round(player.elo_rating)})</label>`;
+            container.appendChild(div);
+        });
+}
+
+function renderCourt() {
+    const container = document.getElementById('court-layout-container');
+
+    const createTeamHTML = (team, teamName) => {
+        let playersHTML = team.map(playerId => {
+            const player = availablePlayers.find(p => p.id === playerId);
+            
+            // [SỬA LỖI] Kiểm tra xem player có tồn tại không trước khi dùng
+            if (!player) {
+                console.error(`Lỗi: Không tìm thấy người chơi với ID ${playerId} trong danh sách availablePlayers.`);
+                return ''; // Trả về chuỗi rỗng để không làm hỏng giao diện
+            }
+
+            return `<div class="player-chip" draggable="true" data-player-id="${playerId}">${player.name}</div>`;
+        }).join('');
+
+        if (team.length === 0) {
+            playersHTML = '<div class="player-slot-placeholder">Kéo người chơi vào đây</div>';
+        } else if (team.length === 1) {
+            playersHTML += '<div class="player-slot-placeholder">Kéo thêm người (đánh đôi)</div>';
+        }
+
+        return `<div class="court-team-area" data-team="${teamName}">
+                    <div class="team-label">ĐỘI ${teamName}</div>
+                    ${playersHTML}
+                </div>`;
+    };
+
+    const teamA_HTML = createTeamHTML(courtSlots.teamA, 'A');
+    const teamB_HTML = createTeamHTML(courtSlots.teamB, 'B');
+
+    container.innerHTML = `<div class="court-layout">${teamA_HTML}<div class="court-net"></div>${teamB_HTML}</div>`;
+}
+
+function renderCourtSelector() {
+    const select = document.getElementById('court-select');
+    select.innerHTML = '';
+    if (availableCourts.length === 0) {
+        select.innerHTML = '<option value="">Không có sân trống</option>';
+        return;
+    }
+    availableCourts.forEach(court => {
+        const option = document.createElement('option');
+        option.value = court.id;
+        option.textContent = court.name;
+        select.appendChild(option);
     });
 }
 
-// Render mục 2: Danh sách các trận đấu được gợi ý từ API
-function renderSuggestedMatches() {
-    const container = document.getElementById('pairings-list-container');
-    container.innerHTML = '';
-
-    if (suggestedMatches.length === 0) {
-        container.innerHTML = '<div class="list-item-placeholder">Chưa có gợi ý nào.</div>';
-        return;
-    }
-
-    suggestedMatches.forEach((match, index) => {
-        const teamANames = `${match.team_A[0].name.split(' ').pop()} & ${match.team_A[1].name.split(' ').pop()}`;
-        const teamBNames = `${match.team_B[0].name.split(' ').pop()} & ${match.team_B[1].name.split(' ').pop()}`;
-        const div = document.createElement('div');
-        div.className = 'pairing-item';
-        div.dataset.matchIndex = index;
-        div.innerHTML = `
-            <div>${teamANames} <strong style="color: var(--color-primary)">vs</strong> ${teamBNames}</div>
-            <small style="color: var(--color-secondary)">Độ chênh: ${match.balance_score}</small>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// Render mục 3: Khu vực xác nhận
-function renderConfirmation() {
-    const container = document.getElementById('confirmation-container');
-    if (!confirmedMatch) {
-        container.innerHTML = '<div class="list-item-placeholder">Vui lòng chọn một cặp đấu từ Bước 2.</div>';
-        return;
-    }
-
-    const { team_A, team_B } = confirmedMatch;
-    const teamANames = `${team_A[0].name} & ${team_A[1].name}`;
-    const teamBNames = `${team_B[0].name} & ${team_B[1].name}`;
-    // Lấy sân đã được gợi ý hoặc cho phép chọn
-    const suggestedCourtId = confirmedMatch.court_id;
-    const courtOptions = availableCourts.map(court => 
-        `<option value="${court.id}" ${court.id === suggestedCourtId ? 'selected' : ''}>${court.name}</option>`
-    ).join('');
-
-    container.innerHTML = `
-        <div class="pairing-card">
-            <div class="pairing-card__teams">
-                <div>
-                    <div><strong>Đội A:</strong> ${teamANames}</div>
-                    <div style="margin: 0.5rem 0;"><strong>VS</strong></div>
-                    <div><strong>Đội B:</strong> ${teamBNames}</div>
-                </div>
-            </div>
-            <div class="pairing-card__court-selector">
-                <label for="court-select">Gán vào sân:</label>
-                <select id="court-select">
-                    ${courtOptions}
-                </select>
-            </div>
-            <button id="confirm-match-btn" class="button button--primary">Xác nhận & Bắt đầu</button>
-        </div>
-    `;
-    document.getElementById('confirm-match-btn').addEventListener('click', handleConfirmMatch);
-}
-
-// Cập nhật trạng thái giao diện
 function updateUIStates() {
-    const playerCount = selectedPlayerIds.size;
-    document.getElementById('player-count').textContent = `Đã chọn: ${playerCount}`;
-    const generateBtn = document.getElementById('generate-pairings-btn');
+    document.getElementById('player-count').textContent = `Sẵn sàng: ${availablePlayers.length}`;
+    const confirmBtn = document.getElementById('confirm-match-btn');
+    const validationMsg = document.getElementById('validation-message');
+    const isTeamAValid = courtSlots.teamA.length >= 1 && courtSlots.teamA.length <= 2;
+    const isTeamBValid = courtSlots.teamB.length >= 1 && courtSlots.teamB.length <= 2;
 
-    if (playerCount >= 4 && playerCount % 4 === 0) {
-        generateBtn.disabled = false;
-        generateBtn.textContent = `Gợi ý cặp đấu từ ${playerCount} người`;
+    if (!isTeamAValid || !isTeamBValid) {
+        confirmBtn.disabled = true;
+        validationMsg.textContent = 'Mỗi đội phải có ít nhất 1 người chơi.';
+    } else if (availableCourts.length === 0) {
+        confirmBtn.disabled = true;
+        validationMsg.textContent = 'Không có sân nào trống.';
     } else {
-        generateBtn.disabled = true;
-        generateBtn.textContent = 'Chọn số người là bội của 4';
+        confirmBtn.disabled = false;
+        validationMsg.textContent = '';
     }
-
-    // Reset các bước sau nếu lựa chọn người chơi thay đổi
-    suggestedMatches = [];
-    confirmedMatch = null;
-    renderSuggestedMatches();
-    renderConfirmation();
+    
+    renderAvailablePlayerList();
+    renderCourt();
 }
-
 
 // === EVENT HANDLERS ===
 
-function handlePlayerSelection(e) {
-    if (e.target.matches('input[type="checkbox"]')) {
-        const playerId = parseInt(e.target.dataset.playerId, 10);
-        e.target.checked ? selectedPlayerIds.add(playerId) : selectedPlayerIds.delete(playerId);
-        updateUIStates();
-    }
-}
-
-function handleSelectAll() {
-    allPlayers.forEach(p => {
-        // Chỉ chọn những người không bị bắt buộc nghỉ
-        if (p.consecutive_matches < 2) {
-            selectedPlayerIds.add(p.id);
-        }
-    });
-    renderPlayerList();
-    updateUIStates();
-}
-
-function handleDeselectAll() {
-    selectedPlayerIds.clear();
-    renderPlayerList();
-    updateUIStates();
-}
-
-// [THAY ĐỔI QUAN TRỌNG] Gọi API suggestions
-async function handleGenerateSuggestions() {
-    const btn = document.getElementById('generate-pairings-btn');
-    btn.disabled = true;
-    btn.textContent = 'Đang tính toán...';
-
-    const data = { player_ids: Array.from(selectedPlayerIds) };
-    const result = await apiCall('/api/suggestions', 'POST', data);
-
-    if (result) {
-        suggestedMatches = result.suggestions;
-        renderSuggestedMatches();
-    }
-    
-    btn.disabled = false;
-    btn.textContent = `Gợi ý cặp đấu từ ${selectedPlayerIds.size} người`;
-}
-
-function handlePairingSelection(e) {
-    const target = e.target.closest('.pairing-item');
-    if (!target) return;
-    document.querySelectorAll('.pairing-item.selected').forEach(el => el.classList.remove('selected'));
-    target.classList.add('selected');
-
-    const matchIndex = parseInt(target.dataset.matchIndex, 10);
-    confirmedMatch = suggestedMatches[matchIndex];
-    renderConfirmation();
-}
-
 async function handleConfirmMatch() {
-    const courtSelect = document.getElementById('court-select');
-    const courtId = courtSelect.value;
+    const courtId = document.getElementById('court-select').value;
     if (!courtId) { alert('Vui lòng chọn sân!'); return; }
-    if (!confirmedMatch) { alert('Lỗi, vui lòng chọn lại cặp đấu.'); return; }
 
-    const data = {
-        court_id: parseInt(courtId, 10),
-        team_A: confirmedMatch.team_A,
-        team_B: confirmedMatch.team_B
-    };
+    const team_A = courtSlots.teamA.map(id => availablePlayers.find(p => p.id === id));
+    const team_B = courtSlots.teamB.map(id => availablePlayers.find(p => p.id === id));
+    const data = { court_id: parseInt(courtId, 10), team_A, team_B };
 
-    // [THAY ĐỔI] Gọi API /queue thay vì /start
     const result = await apiCall('/api/matches/queue', 'POST', data);
-    
     if (result) {
-        alert(result.message); // Hiển thị thông báo "Đã thêm vào hàng chờ!"
-        window.location.href = '/'; // Chuyển về Dashboard để xem hàng chờ
+        alert(result.message || 'Đã thêm trận đấu vào hàng chờ thành công!');
+        window.location.href = '/';
     }
+}
+
+// === DRAG & DROP LOGIC ===
+let draggedPlayerId = null;
+
+function handleDragStart(e) {
+    const target = e.target.closest('[data-player-id]');
+    if (!target) return;
+    draggedPlayerId = parseInt(target.dataset.playerId, 10);
+    e.dataTransfer.setData('text/plain', draggedPlayerId);
+    target.classList.add('dragging');
+}
+
+function handleDragEnd(e) {
+    const target = e.target.closest('[data-player-id]');
+    target?.classList.remove('dragging'); // Thêm optional chaining an toàn hơn
+    draggedPlayerId = null;
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    const teamArea = e.target.closest('.court-team-area');
+    if (teamArea) {
+        teamArea.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    e.target.closest('.court-team-area')?.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    const teamArea = e.target.closest('.court-team-area');
+    if (!teamArea) return;
+
+    teamArea.classList.remove('drag-over');
+    const targetTeamName = teamArea.dataset.team;
+    const targetTeam = targetTeamName === 'A' ? courtSlots.teamA : courtSlots.teamB;
+    
+    if (targetTeam.length >= 2) {
+        alert("Mỗi đội chỉ có tối đa 2 người chơi.");
+        return;
+    }
+
+    const droppedPlayerId = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    
+    if (courtSlots.teamA.includes(droppedPlayerId)) {
+        courtSlots.teamA = courtSlots.teamA.filter(id => id !== droppedPlayerId);
+    }
+    if (courtSlots.teamB.includes(droppedPlayerId)) {
+        courtSlots.teamB = courtSlots.teamB.filter(id => id !== droppedPlayerId);
+    }
+
+    targetTeam.push(droppedPlayerId);
+    updateUIStates();
 }
 
 // === INITIALIZATION ===
+function initializeDragDropListeners() {
+    const playerListContainer = document.getElementById('player-list-container');
+    const courtContainer = document.getElementById('court-layout-container');
+
+    playerListContainer.addEventListener('dragstart', handleDragStart);
+    playerListContainer.addEventListener('dragend', handleDragEnd);
+    courtContainer.addEventListener('dragstart', handleDragStart);
+    courtContainer.addEventListener('dragend', handleDragEnd);
+    courtContainer.addEventListener('dragover', handleDragOver);
+    courtContainer.addEventListener('dragleave', handleDragLeave);
+    courtContainer.addEventListener('drop', handleDrop);
+}
+
+function renderInitialPlayerCheckboxes(container) {
+    container.innerHTML = '';
+    allPlayers.sort((a,b) => a.name.localeCompare(b.name)).forEach(player => {
+        const div = document.createElement('div');
+        div.className = 'player-select-item-checkbox';
+        div.innerHTML = `
+            <input type="checkbox" id="player-check-${player.id}" data-player-id="${player.id}">
+            <label for="player-check-${player.id}">${player.name}</label>
+        `;
+        container.appendChild(div);
+    });
+    container.addEventListener('change', handlePlayerSelection);
+}
+
 export default async function init() {
     const [players, courts, ongoingMatches] = await Promise.all([
-        apiCall('/api/players'),
+        apiCall('/api/players/available'),
         apiCall('/api/courts'),
         apiCall('/api/matches/ongoing')
     ]);
 
-    allPlayers = players || [];
+    availablePlayers = players || [];
     const busyCourtIds = new Set((ongoingMatches || []).map(m => m.court_id));
     availableCourts = (courts || []).filter(c => !busyCourtIds.has(c.id));
-
-    // Gán sự kiện
-    document.getElementById('player-list-container').addEventListener('click', handlePlayerSelection);
-    document.getElementById('pairings-list-container').addEventListener('click', handlePairingSelection);
-    document.getElementById('select-all-btn').addEventListener('click', handleSelectAll);
-    document.getElementById('deselect-all-btn').addEventListener('click', handleDeselectAll);
-    document.getElementById('generate-pairings-btn').addEventListener('click', handleGenerateSuggestions);
-
-    renderPlayerList();
+    
+    document.getElementById('confirm-match-btn').addEventListener('click', handleConfirmMatch);
+    
+    initializeDragDropListeners();
+    renderCourtSelector();
     updateUIStates();
 }

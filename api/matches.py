@@ -14,8 +14,13 @@ def get_db_connection():
 def queue_match():
     data = request.get_json()
     court_id, team_a, team_b = data.get('court_id'), data.get('team_A'), data.get('team_B')
-    if not all([court_id, team_a, team_b, len(team_a) == 2, len(team_b) == 2]):
-        return jsonify({'error': 'Dữ liệu không hợp lệ'}), 400
+    # Đoạn code mới
+    if not all([court_id, team_a is not None, team_b is not None]):
+        return jsonify({'error': 'Thiếu dữ liệu sân hoặc đội'}), 400
+
+    # Kiểm tra mỗi đội có từ 1 đến 2 người
+    if not (1 <= len(team_a) <= 2 and 1 <= len(team_b) <= 2):
+        return jsonify({'error': 'Mỗi đội phải có từ 1 đến 2 người chơi'}), 400
 
     conn = get_db_connection()
     cursor = conn.cursor()

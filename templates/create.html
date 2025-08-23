@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <title>Tạo Trận Đấu - BSM</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    </head>
+</head>
 <body>
     <div class="page-container">
         <aside class="sidebar">
@@ -24,39 +24,48 @@
                 <h1>Tạo Trận Đấu Mới</h1>
             </header>
 
-            <div class="creation-v2-container">
-                <section class="card">
+            <div class="creation-v2-container" style="grid-template-columns: 1fr 2.5fr; align-items: stretch;">
+                <section class="card" style="display: flex; flex-direction: column;">
                     <div class="card__header">
-                        <h2 class="card__title">Bước 1: Chọn người chơi</h2>
-                        <span id="player-count" class="card-header-badge">Đã chọn: 0</span>
+                        <h2 class="card__title">Người chơi sẵn sàng</h2>
+                        <span id="player-count" class="card-header-badge">Đang tải...</span>
                     </div>
-                    <div class="card__actions-bar">
-                        <button id="select-all-btn" class="button button--secondary">Chọn tất cả</button>
-                        <button id="deselect-all-btn" class="button button--secondary">Bỏ chọn tất cả</button>
-                    </div>
-                    <div id="player-list-container" class="player-selection-list">
+                    <div id="player-list-container" class="player-selection-list" style="flex-grow: 1;">
                         </div>
                 </section>
 
-                <section class="card">
+                <section class="card" style="display: flex; flex-direction: column;">
                     <div class="card__header">
-                         <h2 class="card__title">Bước 2: Trộn và chọn cặp đấu</h2>
+                         <h2 class="card__title">Xếp cặp</h2>
+                         <div class="toggle-switch">
+                            <input type="checkbox" id="mode-toggle" class="toggle-switch__input" checked>
+                            <label for="mode-toggle" class="toggle-switch__label">
+                                <span class="toggle-switch__text">Manual</span>
+                                <span class="toggle-switch__text">Auto</span>
+                            </label>
+                         </div>
                     </div>
-                    <div class="generation-zone">
-                        <p>Chọn số người chơi là bội số của 4, sau đó bấm nút bên dưới.</p>
-                        <button id="generate-pairings-btn" class="button button--primary" disabled>Trộn cặp đấu</button>
-                    </div>
-                    <div id="pairings-list-container" class="pairings-selection-list">
-                         <div class="list-item-placeholder">Chưa có cặp đấu nào.</div>
-                    </div>
-                </section>
+                    
+                    <div id="creation-mode-wrapper" class="manual-mode-active" style="flex-grow: 1; display: flex;">
+                        <div id="manual-mode-container" class="creation-mode-content">
+                            <div id="manual-creation-zone">
+                                <div id="court-layout-container"></div>
+                                <div id="confirmation-area">
+                                    <div class="form-group">
+                                        <label for="court-select">Gán vào sân trống:</label>
+                                        <select id="court-select"></select>
+                                    </div>
+                                    <button id="confirm-match-btn" class="button button--primary" disabled>Xác nhận & Đưa vào hàng chờ</button>
+                                    <p id="validation-message" style="color: red; margin-top: 10px; text-align: center; height: 20px;"></p>
+                                </div>
+                            </div>
+                        </div>
 
-                <section class="card">
-                    <div class="card__header">
-                        <h2 class="card__title">Bước 3: Gán sân & Xác nhận</h2>
-                    </div>
-                    <div id="confirmation-container" class="confirmation-zone">
-                         <div class="list-item-placeholder">Vui lòng chọn một cặp đấu từ Bước 2.</div>
+                        <div id="auto-mode-container" class="creation-mode-content">
+                             <div class="list-item-placeholder" style="height: 100%;">
+                                Giao diện gợi ý tự động (Suggest) sẽ được phát triển ở đây.
+                             </div>
+                        </div>
                     </div>
                 </section>
             </div>

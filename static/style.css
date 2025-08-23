@@ -879,3 +879,320 @@ hr {
     cursor: not-allowed;
     text-decoration: line-through;
 }
+
+/* ======================================================= */
+/* === [SỬA LỖI] CSS CHO TẠO TRẬN KÉO-THẢ (MANUAL) === */
+/* ======================================================= */
+
+#manual-creation-zone {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#court-layout-container {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.court-layout {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+    max-width: 700px;
+    height: 320px;
+    padding: 1rem;
+}
+
+.court-team-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.team-label {
+    text-align: center;
+    font-weight: 700;
+    color: var(--color-secondary);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-border);
+}
+
+.court-net {
+    width: 4px;
+    background-color: var(--color-border);
+    border-radius: 4px;
+}
+
+.player-slot {
+    flex-grow: 1;
+    background-color: #f8f9fa;
+    border: 2px dashed var(--color-secondary);
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s, border-color 0.2s;
+    font-style: italic;
+    color: var(--color-secondary);
+    padding: 1rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.player-slot.drag-over {
+    background-color: #e7f1ff;
+    border-color: var(--color-primary);
+}
+
+.player-slot .player-chip {
+    background-color: white;
+    padding: 0.75rem 1.25rem;
+    border-radius: 50px;
+    font-weight: 700;
+    font-style: normal;
+    color: var(--color-dark);
+    box-shadow: var(--box-shadow);
+    cursor: grab;
+    text-align: center;
+    width: 90%;
+}
+
+.player-select-item.dragging {
+    opacity: 0.5;
+}
+.player-select-item.on-court {
+    display: none;
+}
+/* Hide the original checkbox list and show a new draggable list */
+#player-list-container {
+    display: block;
+}
+#player-list-container > .player-select-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    cursor: pointer;
+    border: 1px solid var(--color-border);
+    margin-bottom: 0.5rem;
+}
+#player-list-container > .player-select-item:hover {
+    background-color: #f0f2f5;
+}
+
+#confirmation-area {
+    padding: 1.5rem;
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+}
+#confirmation-area .form-group {
+    max-width: 300px;
+    margin: 0 auto 1rem auto;
+}
+#confirmation-area .button {
+    width: 100%;
+    max-width: 300px;
+}
+
+
+/* ======================================================= */
+/* === [NÂNG CẤP] CSS CHO NÚT GẠT MANUAL/AUTO === */
+/* ======================================================= */
+
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    background-color: #e9ecef;
+    border-radius: 50px;
+    padding: 4px;
+    border: 1px solid var(--color-border);
+}
+
+.toggle-switch__input {
+    display: none; /* Ẩn checkbox gốc */
+}
+
+.toggle-switch__label {
+    display: flex;
+    position: relative;
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--color-secondary);
+}
+
+.toggle-switch__text {
+    padding: 6px 16px;
+    transition: color 0.3s ease;
+    z-index: 1; /* Đảm bảo text luôn nằm trên */
+}
+
+/* Tạo lớp giả ::before để làm nền trượt */
+.toggle-switch__label::before {
+    content: '';
+    position: absolute;
+    height: 100%;
+    width: 50%;
+    left: 0;
+    top: 0;
+    background-color: white;
+    border-radius: 50px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+    z-index: 0;
+}
+
+/* Logic chuyển đổi */
+.toggle-switch__input:checked ~ .toggle-switch__label .toggle-switch__text:first-of-type {
+    color: var(--color-primary);
+}
+.toggle-switch__input:not(:checked) ~ .toggle-switch__label .toggle-switch__text:last-of-type {
+    color: var(--color-primary);
+}
+.toggle-switch__input:not(:checked) ~ .toggle-switch__label::before {
+    transform: translateX(100%);
+}
+
+/* Logic ẩn/hiện các container chế độ */
+.creation-mode-content {
+    display: none;
+    width: 100%;
+    height: 100%;
+}
+
+.manual-mode-active #manual-mode-container {
+    display: flex; /* Sử dụng flex để nó co giãn theo chiều cao */
+    flex-direction: column;
+}
+
+.auto-mode-active #auto-mode-container {
+    display: flex;
+}
+
+/* ======================================================= */
+/* === [NÂNG CẤP ĐƠN/ĐÔI] CSS CHO TẠO TRẬN KÉO-THẢ === */
+/* ======================================================= */
+
+#manual-creation-zone {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+#court-layout-container {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.court-layout {
+    display: flex;
+    gap: 1rem;
+    width: 100%;
+    max-width: 800px; /* Tăng chiều rộng một chút */
+    height: 320px;
+    padding: 1rem;
+}
+
+.court-team-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    background-color: #f8f9fa;
+    border: 2px dashed var(--color-secondary);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    transition: background-color 0.2s, border-color 0.2s;
+}
+
+.court-team-area.drag-over {
+    background-color: #e7f1ff;
+    border-color: var(--color-primary);
+}
+
+.team-label {
+    text-align: center;
+    font-weight: 700;
+    color: var(--color-secondary);
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.court-net {
+    width: 4px;
+    background-color: var(--color-border);
+    border-radius: 4px;
+}
+
+.player-chip {
+    background-color: white;
+    padding: 0.75rem 1.25rem;
+    border-radius: 50px;
+    font-weight: 700;
+    color: var(--color-dark);
+    box-shadow: var(--box-shadow);
+    cursor: grab;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.player-slot-placeholder {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-secondary);
+    font-style: italic;
+    text-align: center;
+}
+
+/* Kiểu cho người chơi trong danh sách */
+.player-select-item {
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    cursor: grab;
+    border: 1px solid var(--color-border);
+    margin-bottom: 0.5rem;
+}
+.player-select-item:hover {
+    background-color: #f0f2f5;
+}
+.player-select-item.dragging {
+    opacity: 0.5;
+}
+.player-select-item.on-court {
+    display: none;
+}
+.player-select-item-checkbox { /* Kiểu cho danh sách checkbox */
+    display: flex;
+    opacity: 0;
+    align-items: center;
+}
+.player-select-item-checkbox label {
+    cursor: pointer;
+    padding: 0.5rem;
+    flex-grow: 1;
+    opacity: 0;
+}
+
+#confirmation-area {
+    padding: 1.5rem;
+    border-top: 1px solid var(--color-border);
+    text-align: center;
+}
+#confirmation-area .form-group {
+    max-width: 300px;
+    margin: 0 auto 1rem auto;
+}
+#confirmation-area .button {
+    width: 100%;
+    max-width: 300px;
+}

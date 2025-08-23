@@ -108,3 +108,18 @@ def delete_player(player_id):
         return jsonify({'error': 'Không tìm thấy người chơi'}), 404
     conn.close()
     return jsonify({'message': f'Đã xóa thành công người chơi ID {player_id}'})
+
+# Thêm vào cuối file api/players.py
+
+@players_api.route('/players/available', methods=['GET'])
+def get_available_players():
+    """
+    Chỉ trả về danh sách người chơi thỏa mãn các điều kiện sau:
+    1. Đang có mặt (is_active = 1)
+    2. Không phải nghỉ do đã chơi 2 trận liên tiếp (consecutive_matches < 2)
+    """
+    conn = get_db_connection()
+    query = "SELECT * FROM players WHERE is_active = 1 AND consecutive_matches < 2 ORDER BY name ASC"
+    players = conn.execute(query).fetchall()
+    conn.close()
+    return jsonify([dict(row) for row in players])
