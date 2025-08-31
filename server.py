@@ -1,5 +1,5 @@
 # server.py (Phiên bản cuối cùng, rất gọn gàng)
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 import os
 
 # Import các Blueprint từ thư mục 'api'
@@ -24,6 +24,13 @@ app.register_blueprint(settings_api, url_prefix='/api') # Thêm dòng này
 
 # --- Route chính phục vụ Frontend ---
 # Route này vẫn giữ ở file chính vì nó là giao diện người dùng, không phải API
+
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'),
+                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 @app.route('/')
 def home():
     """Phục vụ trang chủ index.html."""
