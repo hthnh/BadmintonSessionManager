@@ -15,10 +15,10 @@ async function apiCall(url) {
 /** [MỚI] Hàm điền dữ liệu người chơi vào modal */
 function populatePlayerDetailModal(player) {
     const fields = [
-        'id','name', 'join_date', 'type', 'gender', 'contact_info', 'is_active',
-        'total_matches_played', 'total_wins', 'win_rate', 'current_win_streak',
-        'longest_win_streak', 'last_played_date', 'total_sessions_attended'
-    ];
+    'id','name', 'join_date', 'type', 'gender', 'contact_info', 'is_active','skill_level',
+    'total_matches_played', 'total_wins', 'win_rate',
+    'last_played_date', 'total_sessions_attended'
+];
     fields.forEach(field => {
         const element = document.getElementById(`detail-${field}`);
         if (element) {

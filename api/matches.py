@@ -82,35 +82,55 @@ def finish_match(match_id):
     if score_a is None or score_b is None or score_a == score_b:
         return jsonify({'error': 'Điểm số không hợp lệ.'}), 400
 
-    settings = logic.load_settings()
     winning_team = 'A' if score_a > score_b else 'B'
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    # Trong api/matches.py, hàm finish_match()
+
+# BỎ ĐI câu lệnh SELECT cũ và vòng lặp for.
+# THAY THẾ toàn bộ từ dòng 102 đến 114 bằng đoạn code mới sau:
+
     try:
-        # Cập nhật thống kê cơ bản cho người chơi
+        # Lấy thông tin người chơi và các chỉ số tổng của họ
         player_rows = cursor.execute(
-            'SELECT p.id, p.total_matches_played, p.total_wins, mp.team FROM players p JOIN match_players mp ON p.id = mp.player_id WHERE mp.match_id = ?',
+            '''SELECT p.id, p.total_matches_played, p.total_wins, mp.team 
+            FROM players p JOIN match_players mp ON p.id = mp.player_id 
+            WHERE mp.match_id = ?''',
             (match_id,)
         ).fetchall()
 
+        # Tính toán và cập nhật chỉ số tổng và chỉ số phiên cho từng người chơi
         for row in player_rows:
-            won_match = 1 if row['team'] == winning_team else 0
+            is_winner = 1 if row['team'] == winning_team else 0
+
+            # Tính toán chỉ số tổng mới
             new_total_matches = row['total_matches_played'] + 1
-            new_wins = row['total_wins'] + won_match
-            new_win_rate = new_wins / new_total_matches
-            
+            new_total_wins = row['total_wins'] + is_winner
+            # Tránh chia cho 0
+            new_win_rate = new_total_wins / new_total_matches if new_total_matches > 0 else 0
+
+            # Cập nhật cả chỉ số tổng và chỉ số phiên
             cursor.execute(
-                '''UPDATE players SET total_matches_played = ?, total_wins = ?, win_rate = ?, last_played_date = datetime('now', 'localtime') WHERE id = ?''',
-                (new_total_matches, new_wins, new_win_rate, row['id'])
+                '''UPDATE players SET 
+                    total_matches_played = ?, 
+                    total_wins = ?, 
+                    win_rate = ?, 
+                    last_played_date = datetime('now', 'localtime'),
+                    session_matches_played = session_matches_played + 1,
+                    session_wins = session_wins + ?,
+                    session_last_played = datetime('now', 'localtime')
+                WHERE id = ?''',
+                (new_total_matches, new_total_wins, new_win_rate, is_winner, row['id'])
             )
 
-        # Cập nhật trạng thái trận đấu
+        # Cập nhật trạng thái trận đấu (giữ nguyên như cũ)
         cursor.execute(
             "UPDATE matches SET status = 'finished', end_time = datetime('now', 'localtime'), winning_team = ?, score_A = ?, score_B = ? WHERE id = ?",
             (winning_team, score_a, score_b, match_id)
         )
-        
+
+    # ... các phần còn lại của hàm giữ nguyên ...
         
         conn.commit()
         match_info = cursor.execute("SELECT court_id FROM matches WHERE id = ?", (match_id,)).fetchone()
