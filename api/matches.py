@@ -27,14 +27,15 @@ def queue_match():
     try:
         cursor.execute("INSERT INTO matches (court_id, status) VALUES (?, 'queued')", (court_id,))
         match_id = cursor.lastrowid
-        
+
         players_data = []
         for player in team_a:
-            players_data.append((match_id, player['id'], 'A', player['elo_rating']))
+            players_data.append((match_id, player['id'], 'A'))
         for player in team_b:
-            players_data.append((match_id, player['id'], 'B', player['elo_rating']))
-            
-        cursor.executemany("INSERT INTO match_players (match_id, player_id, team, elo_before) VALUES (?, ?, ?, ?)", players_data)
+            players_data.append((match_id, player['id'], 'B'))
+                    
+        cursor.executemany("INSERT INTO match_players (match_id, player_id, team) VALUES (?, ?, ?)", players_data)
+
         conn.commit()
         return jsonify({'message': 'Đã thêm trận đấu vào hàng chờ!', 'match_id': match_id}), 201
     except sqlite3.Error as e:
@@ -109,10 +110,8 @@ def finish_match(match_id):
             "UPDATE matches SET status = 'finished', end_time = datetime('now', 'localtime'), winning_team = ?, score_A = ?, score_B = ? WHERE id = ?",
             (winning_team, score_a, score_b, match_id)
         )
-        cursor.execute(
-            "UPDATE matches SET status = 'finished', end_time = datetime('now', 'localtime'), winning_team = ?, score_A = ?, score_B = ? WHERE id = ?",
-            (winning_team, score_a, score_b, match_id)
-        )
+        
+        
         conn.commit()
         match_info = cursor.execute("SELECT court_id FROM matches WHERE id = ?", (match_id,)).fetchone()
         if match_info:

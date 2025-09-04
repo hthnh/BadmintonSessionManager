@@ -45,7 +45,7 @@ function renderAvailablePlayerList() {
                 div.classList.add('on-court');
             }
 
-            div.innerHTML = `<label>${player.name} (ELO: ${Math.round(player.elo_rating)})</label>`;
+            div.innerHTML = `<label>${player.name} (Level: ${player.skill_level})</label>`;
             container.appendChild(div);
         });
 }
@@ -127,8 +127,14 @@ async function handleConfirmMatch() {
     const courtId = document.getElementById('court-select').value;
     if (!courtId) { alert('Vui lòng chọn sân!'); return; }
 
-    const team_A = courtSlots.teamA.map(id => availablePlayers.find(p => p.id === id));
-    const team_B = courtSlots.teamB.map(id => availablePlayers.find(p => p.id === id));
+    const team_A = courtSlots.teamA.map(id => {
+        const p = availablePlayers.find(player => player.id === id);
+        return { id: p.id, name: p.name }; // Chỉ gửi id và name
+    });
+    const team_B = courtSlots.teamB.map(id => {
+        const p = availablePlayers.find(player => player.id === id);
+        return { id: p.id, name: p.name }; // Chỉ gửi id và name
+    });
     const data = { court_id: parseInt(courtId, 10), team_A, team_B };
 
     const result = await apiCall('/api/matches/queue', 'POST', data);

@@ -16,7 +16,6 @@ async function apiCall(url) {
 function populatePlayerDetailModal(player) {
     const fields = [
         'id','name', 'join_date', 'type', 'gender', 'contact_info', 'is_active',
-        'elo_rating', 'k_factor', 'rank_tier', 'provisional_games_left',
         'total_matches_played', 'total_wins', 'win_rate', 'current_win_streak',
         'longest_win_streak', 'last_played_date', 'total_sessions_attended'
     ];
@@ -29,7 +28,6 @@ function populatePlayerDetailModal(player) {
             if (field.includes('date') && value) value = new Date(value).toLocaleString('vi-VN');
             else if (field.includes('date')) value = 'Chưa có';
             if (field === 'win_rate') value = `${(value * 100).toFixed(1)}%`;
-            if (field === 'elo_rating') value = Math.round(value);
 
             element.textContent = (value !== null && value !== undefined) ? value : 'N/A';
         }
@@ -54,20 +52,13 @@ function renderHistoryList(matches) {
         });
         const renderTeam = (team, teamLetter) => {
             const isWinner = match.winning_team === teamLetter;
-            let playersHtml = '';
-            team.forEach(p => {
-                const changeSign = p.elo_change > 0 ? '+' : '';
-                const changeClass = p.elo_change > 0 ? 'positive' : (p.elo_change < 0 ? 'negative' : '');
-                // Tách tên và ELO để có thể click vào tên
-                playersHtml += `
-                    <div class="player-elo-info">
-                        <div>
-                            <span class="player-name-link" data-player-id="${p.id}">${p.name}</span>
-                            <span class="elo-timeline">(${p.elo_before} -> ${p.elo_after})</span>
-                        </div>
-                        <span class="elo-change ${changeClass}">${changeSign}${p.elo_change}</span>
-                    </div>`;
-            });
+            let playersHtml = team.map(p => `
+                <div class="player-elo-info">
+                    <div>
+                        <span class="player-name-link" data-player-id="${p.id}">${p.name}</span>
+                    </div>
+                </div>
+            `).join('');
             return `<div class="team-details ${isWinner ? 'winner' : ''}"><h4>Đội ${teamLetter} ${isWinner ? ' (Thắng)' : ''}</h4>${playersHtml}</div>`;
         };
         card.innerHTML = `

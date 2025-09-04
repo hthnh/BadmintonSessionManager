@@ -112,7 +112,7 @@ function renderActivePlayers() {
             <span class="player-elo">
                 - Trận: 
                 <strong style="color: var(--color-primary);">${player.session_matches_played}</strong> 
-                - ELO: ${Math.round(player.elo_rating)}
+                - Level: ${player.skill_level}
             </span>
         `;
         container.appendChild(div);
