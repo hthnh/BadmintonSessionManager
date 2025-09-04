@@ -112,13 +112,18 @@ function createAvailableCourtCard(court) {
                 <button class="button button--primary assign-match-btn">Tạo trận mới</button>
             </div>
         </div>
-        <div class="court-card__footer"><span>Trạng thái: Trống</span></div>`;
+        <div class="court-card__footer">
+            <span>Trạng thái: Trống</span>
+            <span style="font-weight: 700;">Lượt trong phiên: ${court.session_turns}</span>
+        </div>`;
 }
-
 function createOngoingCourtCard(court, match) {
     stopTimer(match.id);
     return `
-        <div class="court-card__header"><h3>${court.name}</h3></div>
+        <div class="court-card__header">
+            <h3>${court.name}</h3>
+            <span class="card-header-badge">Lượt trong phiên: ${court.session_turns}</span>
+        </div>
         <div class="court-card__body">
             <div class="player-slot">${match.team_A[0].name}</div><div class="player-slot">${match.team_B[0].name}</div>
             <div class="player-slot">${match.team_A[1].name}</div><div class="player-slot">${match.team_B[1].name}</div>
@@ -130,7 +135,6 @@ function createOngoingCourtCard(court, match) {
             </div>
         </div>`;
 }
-
 async function handleContainerClick(e) {
     const target = e.target;
     const courtCard = target.closest('.court-card');

@@ -87,34 +87,35 @@ def finish_match(match_id):
     cursor = conn.cursor()
 
     try:
-        players_rows = cursor.execute(
-            'SELECT p.*, mp.team FROM players p JOIN match_players mp ON p.id = mp.player_id WHERE mp.match_id = ?',
+        player_rows = cursor.execute(
+            'SELECT p.id, p.total_matches_played, p.total_wins, mp.team FROM players p JOIN match_players mp ON p.id = mp.player_id WHERE mp.match_id = ?',
             (match_id,)
         ).fetchall()
-        
-        if len(players_rows) != 4:
-            conn.close()
-            return jsonify({'error': 'Không tìm thấy đủ người chơi cho trận đấu này'}), 404
 
-        players = [dict(row) for row in players_rows]
-        team_a_players = [p for p in players if p['team'] == 'A']
-        team_b_players = [p for p in players if p['team'] == 'B']
-        
-        elo_team_a = (team_a_players[0]['elo_rating'] + team_a_players[1]['elo_rating']) / 2
-        elo_team_b = (team_b_players[0]['elo_rating'] + team_b_players[1]['elo_rating']) / 2
-        
-        expected_a = 1 / (1 + settings.get('ELO_BASE', 10)**((elo_team_b - elo_team_a) / settings.get('SCALING_FACTOR', 400)))
-        result_for_a = 1 if winning_team == 'A' else 0
-
-        def update_player_stats(player, elo_change, won_match):
-            new_elo = player['elo_rating'] + elo_change
-            new_total_matches = player['total_matches_played'] + 1
-            new_wins = player['total_wins'] + (1 if won_match else 0)
-            new_win_rate = new_wins / new_total_matches if new_total_matches > 0 else 0
+        for row in player_rows:
+            won_match = 1 if row['team'] == winning_team else 0
+            new_total_matches = row['total_matches_played'] + 1
+            new_wins = row['total_wins'] + won_match
+            new_win_rate = new_wins / new_total_matches
             
             cursor.execute(
-                '''UPDATE players SET elo_rating = ?, total_matches_played = ?, total_wins = ?, win_rate = ?, last_played_date = datetime('now', 'localtime') WHERE id = ?''',
-                (new_elo, new_total_matches, new_wins, new_win_rate, player['id'])
+            "UPDATE matches SET status = 'finished', end_time = datetime('now', 'localtime'), winning_team = ?, score_A = ?, score_B = ? WHERE id = ?",
+            (winning_team, score_a, score_b, match_id)
+        )
+
+            cursor.execute(
+                '''UPDATE players SET 
+                       elo_rating = ?, 
+                       total_matches_played = ?, 
+                       total_wins = ?, 
+                       win_rate = ?, 
+                       last_played_date = datetime('now', 'localtime'),
+                       session_matches_played = ?,  -- Dòng mới
+                       session_wins = ?,            -- Dòng mới
+                       session_last_played = datetime('now', 'localtime') -- Dòng mới
+                   WHERE id = ?''',
+                (new_elo, new_total_matches, new_wins, new_win_rate, 
+                 new_session_matches, new_session_wins, player['id'])
             )
             cursor.execute('UPDATE match_players SET elo_after = ? WHERE match_id = ? AND player_id = ?',
                         (new_elo, match_id, player['id']))
@@ -136,6 +137,12 @@ def finish_match(match_id):
             "UPDATE matches SET status = 'finished', end_time = datetime('now', 'localtime'), winning_team = ?, score_A = ?, score_B = ? WHERE id = ?",
             (winning_team, score_a, score_b, match_id)
         )
+        conn.commit()
+        match_info = cursor.execute("SELECT court_id FROM matches WHERE id = ?", (match_id,)).fetchone()
+        if match_info:
+            court_id = match_info['court_id']
+            cursor.execute("UPDATE courts SET session_turns = session_turns + 1 WHERE id = ?", (court_id,))
+
         conn.commit()
 
         # Logic reset consecutive_matches cho người chơi đã nghỉ
@@ -208,7 +215,7 @@ def get_match_history():
         SELECT
             m.id as match_id, m.end_time, m.winning_team, m.score_A, m.score_B, 
             c.name as court_name, p.id as player_id, p.name as player_name, 
-            mp.team, mp.elo_before, mp.elo_after
+            mp.team
         FROM matches m
         JOIN courts c ON m.court_id = c.id
         JOIN match_players mp ON m.id = mp.match_id
@@ -228,15 +235,10 @@ def get_match_history():
                 'winning_team': row['winning_team'], 'score_A': row['score_A'],
                 'score_B': row['score_B'], 'team_A': [], 'team_B': []
             }
-        
-        elo_after = row['elo_after'] if row['elo_after'] is not None else row['elo_before']
-        elo_change = elo_after - row['elo_before']
+
         
         player = {
-            'id': row['player_id'], 'name': row['player_name'],
-            'elo_before': round(row['elo_before']),
-            'elo_after': round(elo_after),
-            'elo_change': round(elo_change, 2)
+            'id': row['player_id'], 'name': row['player_name']
         }
         matches[mid][f"team_{row['team']}"].append(player)
         

@@ -41,20 +41,17 @@ def add_player():
     player_type = new_player.get('type', 'Vãng lai')
     gender = new_player.get('gender', 'Nam')
     contact_info = new_player.get('contact_info', None)
-    
-    elo = new_player.get('elo_rating', 1500)
-    k_factor = new_player.get('k_factor', 32)
-    provisional_games_left = new_player.get('provisional_games_left', 5)
-    rank_tier = new_player.get('rank_tier', None)
+    # Lấy skill_level thay vì elo
+    skill_level = new_player.get('skill_level', 3) 
 
     try:
         conn = get_db_connection()
-        # Thêm các trường mới và sử dụng giờ địa phương cho join_date
+        # Cập nhật câu lệnh SQL
         conn.execute('''
-            INSERT INTO players (name, type, gender, contact_info, elo_rating, k_factor, provisional_games_left, rank_tier, join_date) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now', 'localtime'))
+            INSERT INTO players (name, type, gender, contact_info, skill_level, join_date) 
+            VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))
             ''',
-            (name, player_type, gender, contact_info, elo, k_factor, provisional_games_left, rank_tier))
+            (name, player_type, gender, contact_info, skill_level))
         conn.commit()
         conn.close()
         return jsonify({'message': f'Đã thêm thành công người chơi {name}'}), 201
@@ -65,12 +62,11 @@ def add_player():
 def update_player(player_id):
     data = request.get_json()
     if not data: return jsonify({'error': 'Không có dữ liệu để cập nhật'}), 400
-
     allowed_fields = [
-        'name', 'type', 'is_active', 'elo_rating', 'gender', 
-        'contact_info', 'k_factor', 'provisional_games_left', 'rank_tier'
+            'name', 'type', 'is_active', 'gender', 
+            'contact_info', 'skill_level' 
     ]
-    
+
     fields_to_update = []
     values = []
     

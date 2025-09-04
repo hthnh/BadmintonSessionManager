@@ -164,8 +164,8 @@
                         <div class="player-card" data-player-id="1"> <div class="player-info">
                                 <div class="player-avatar">H</div>
                                 <div class="player-details">
-                                    <h5>Hảo Hảo</h5>
-                                    <p>SĐT: 0909123456 - ELO: 1500</p> 
+                                    <h5>${player.name}</h5>
+                                    <p>SĐT: ${player.contact_info || 'Chưa có'} - Level: ${player.skill_level}</p> 
                                 </div>
                             </div>
                             <div class="player-actions">
@@ -209,32 +209,18 @@
                                 </div>
                             </div>
 
-                            <div class="toggle-advanced" id="toggle-advanced-btn">
-                                <span>Thiết lập nâng cao ⚙️</span>
-                            </div>
+                         
 
-                            <div class="advanced-settings" id="advanced-settings-container">
-                                <hr>
-                                <h4>Thông số hệ thống (chỉ sửa khi cần thiết)</h4>
-                                <div class="form-grid">
-                                    <div class="form-group">
-                                        <label for="player-elo-input">Điểm ELO</label>
-                                        <input type="number" step="0.01" id="player-elo-input">
-                                    </div>
-                                     <div class="form-group">
-                                        <label for="player-k-factor-input">Hệ số K</label>
-                                        <input type="number" id="player-k-factor-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="player-provisional-input">Trận "thử việc"</label>
-                                        <input type="number" id="player-provisional-input">
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="player-rank-tier-input">Hạng</label>
-                                        <input type="text" id="player-rank-tier-input" placeholder="Đồng, Bạc, Vàng...">
-                                    </div>
-                                </div>
-                                </div>
+                            <div class="form-group">
+                                <label for="player-level-input">Trình độ người chơi</label>
+                                <select id="player-level-input">
+                                    <option value="1">Level 1 (Mới chơi)</option>
+                                    <option value="2">Level 2 (Cơ bản)</option>
+                                    <option value="3" selected>Level 3 (Trung bình)</option>
+                                    <option value="4">Level 4 (Khá)</option>
+                                    <option value="5">Level 5 (Giỏi)</option>
+                                </select>
+                            </div>
                             
                             <button type="submit" class="button button--primary" style="width: 100%; margin-top: 1.5rem;">Lưu thay đổi</button>
                         </form>
@@ -258,11 +244,7 @@
                 <div class="info-field"><label>Giới tính</label><span id="detail-gender"></span></div>
                 <div class="info-field"><label>Số điện thoại</label><span id="detail-contact_info"></span></div>
                 <div class="info-field"><label>Trạng thái</label><span id="detail-is_active"></span></div>
-                <hr style="grid-column: 1 / -1;">
-                <div class="info-field"><label>ELO</label><span id="detail-elo_rating"></span></div>
-                <div class="info-field"><label>Hệ số K</label><span id="detail-k_factor"></span></div>
-                <div class="info-field"><label>Hạng</label><span id="detail-rank_tier"></span></div>
-                <div class="info-field"><label>Số trận "thử việc"</label><span id="detail-provisional_games_left"></span></div>
+                <div class="info-field"><label>Level</label><span id="detail-skill-level"></span></div>
                 <hr style="grid-column: 1 / -1;">
                 <div class="info-field"><label>Tổng số trận</label><span id="detail-total_matches_played"></span></div>
                 <div class="info-field"><label>Tổng số trận thắng</label><span id="detail-total_wins"></span></div>
@@ -278,16 +260,3 @@
     <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-

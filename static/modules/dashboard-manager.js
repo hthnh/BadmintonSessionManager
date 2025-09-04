@@ -2,6 +2,60 @@
 
 let allPlayers = []; // Biến toàn cục
 
+// === [MỚI] CÁC HÀM QUẢN LÝ PHIÊN CHƠI ===
+
+async function handleStartSession() {
+    if (confirm('Bạn có chắc muốn bắt đầu một phiên chơi mới? Hành động này sẽ reset lại toàn bộ chỉ số tạm thời (số trận đã chơi, số trận thắng...) của tất cả người chơi.')) {
+        const result = await apiCall('/api/sessions/start', 'POST');
+        if (result) {
+            alert(result.message);
+            await checkSessionStatus(); // Cập nhật lại trạng thái
+            await refreshDashboard();   // Tải lại toàn bộ dashboard
+        }
+    }
+}
+
+async function handleEndSession() {
+    if (confirm('Bạn có chắc muốn kết thúc phiên chơi này? Tất cả người chơi sẽ được chuyển sang trạng thái "vắng mặt".')) {
+        const result = await apiCall('/api/sessions/end', 'POST');
+        if (result) {
+            alert(result.message);
+            await checkSessionStatus(); // Cập nhật lại trạng thái
+            await refreshDashboard();   // Tải lại toàn bộ dashboard
+        }
+    }
+}
+
+async function checkSessionStatus() {
+    const statusText = document.getElementById('session-status-text');
+    const buttonsContainer = document.getElementById('session-action-buttons');
+    buttonsContainer.innerHTML = ''; // Xóa các nút cũ
+
+    const session = await apiCall('/api/sessions/current');
+
+    if (session) {
+        // Có phiên đang hoạt động
+        const startTime = new Date(session.start_time).toLocaleString('vi-VN');
+        statusText.innerHTML = `<span style="color: #198754; font-weight: 700;">ĐANG HOẠT ĐỘNG</span> (Bắt đầu lúc: ${startTime})`;
+        const endButton = document.createElement('button');
+        endButton.className = 'button button--danger';
+        endButton.textContent = 'Kết thúc phiên';
+        endButton.onclick = handleEndSession;
+        buttonsContainer.appendChild(endButton);
+    } else {
+        // Không có phiên nào hoạt động
+        statusText.innerHTML = `<span style="color: #6c757d; font-weight: 700;">CHƯA BẮT ĐẦU</span>`;
+        const startButton = document.createElement('button');
+        startButton.className = 'button button--primary';
+        startButton.textContent = 'Bắt đầu phiên mới';
+        startButton.onclick = handleStartSession;
+        buttonsContainer.appendChild(startButton);
+    }
+}
+
+
+
+
 /**
  * Hàm trợ giúp chung để gọi API
  */
@@ -44,10 +98,23 @@ function renderActivePlayers() {
         container.innerHTML = '<div class="list-item-placeholder">Chưa có người chơi nào có mặt.</div>';
         return;
     }
+
+    // Sắp xếp người chơi theo tên để danh sách ổn định
+    activePlayers.sort((a, b) => a.name.localeCompare(b.name));
+
     activePlayers.forEach(player => {
         const div = document.createElement('div');
         div.className = 'list-item-player';
-        div.innerHTML = `<span>${player.name}</span> <span class="player-elo">ELO: ${Math.round(player.elo_rating)}</span>`;
+        
+        // [CẬP NHẬT Ở ĐÂY] Thêm thông tin số trận đã chơi trong phiên
+        div.innerHTML = `
+            <span>${player.name}</span> 
+            <span class="player-elo">
+                - Trận: 
+                <strong style="color: var(--color-primary);">${player.session_matches_played}</strong> 
+                - ELO: ${Math.round(player.elo_rating)}
+            </span>
+        `;
         container.appendChild(div);
     });
 }
@@ -294,6 +361,7 @@ async function handleAttendanceSave() {
  * Hàm khởi tạo chính cho module này
  */
 export default function init() {
+    checkSessionStatus();
     refreshDashboard();
 
     // --- Gán sự kiện cho các nút tĩnh ---

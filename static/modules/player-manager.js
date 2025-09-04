@@ -53,12 +53,14 @@ function renderPlayerList() {
 
         const avatar = player.name.charAt(0).toUpperCase();
         
+        // static/modules/player-manager.js -> renderPlayerList
+
         playerCard.innerHTML = `
             <div class="player-info">
                 <div class="player-avatar">${avatar}</div>
                 <div class="player-details">
                     <h5>${player.name}</h5>
-                    <p>SĐT: ${player.contact_info || 'Chưa có'} - ELO: ${Math.round(player.elo_rating)}</p>
+            <p>SĐT: ${player.contact_info || 'Chưa có'} - Level: ${player.skill_level}</p>
                 </div>
             </div>
             <div class="player-actions">
@@ -67,14 +69,14 @@ function renderPlayerList() {
                 <button class="button button--danger delete-btn">Xóa</button>
             </div>
         `;
+// ...
         container.appendChild(playerCard);
     });
 }
 
 function populatePlayerDetailModal(player) {
     const fields = [
-        'id','name', 'join_date', 'type', 'gender', 'contact_info', 'is_active',
-        'elo_rating', 'k_factor', 'rank_tier', 'provisional_games_left',
+        'id','name', 'join_date', 'type', 'gender', 'contact_info', 'is_active','skill-level',
         'total_matches_played', 'total_wins', 'win_rate', 'current_win_streak',
         'longest_win_streak', 'last_played_date', 'total_sessions_attended'
     ];
@@ -92,6 +94,7 @@ function populatePlayerDetailModal(player) {
     document.getElementById('player-detail-modal').style.display = 'block';
 }
 
+// static/modules/player-manager.js -> populatePlayerForm
 function populatePlayerForm(player) {
     isEditMode = true;
     editingPlayerId = player.id;
@@ -102,17 +105,10 @@ function populatePlayerForm(player) {
     document.getElementById('player-contact-input').value = player.contact_info || '';
     document.getElementById('player-type-input').value = player.type;
     document.getElementById('player-gender-input').value = player.gender;
-    
-    // Điền các trường nâng cao
-    document.getElementById('player-elo-input').value = player.elo_rating;
-    document.getElementById('player-k-factor-input').value = player.k_factor;
-    document.getElementById('player-provisional-input').value = player.provisional_games_left;
-    document.getElementById('player-rank-tier-input').value = player.rank_tier || '';
-    
-    // Đảm bảo form nâng cao được ẩn khi bắt đầu sửa
-    document.getElementById('advanced-settings-container').style.display = 'none';
-    document.getElementById('toggle-advanced-btn').innerHTML = '<span>Thiết lập nâng cao ⚙️</span>';
+    // Điền vào mục chọn level
+    document.getElementById('player-level-input').value = player.skill_level;
 }
+
 
 function resetPlayerForm() {
     isEditMode = false;
@@ -127,39 +123,30 @@ function resetPlayerForm() {
 }
 
 // === CÁC HÀM XỬ LÝ SỰ KIỆN ===
-
+// static/modules/player-manager.js -> handleFormSubmit
 async function handleFormSubmit(e) {
     e.preventDefault();
 
-    // Thu thập dữ liệu từ các trường cơ bản
     const playerData = {
         name: document.getElementById('player-name-input').value,
         contact_info: document.getElementById('player-contact-input').value,
         type: document.getElementById('player-type-input').value,
         gender: document.getElementById('player-gender-input').value,
+        // Lấy giá trị skill_level
+        skill_level: parseInt(document.getElementById('player-level-input').value, 10),
     };
-
-    // Nếu các trường nâng cao được hiển thị, thu thập cả dữ liệu từ chúng
-    if (document.getElementById('advanced-settings-container').style.display === 'block') {
-        playerData.elo_rating = parseFloat(document.getElementById('player-elo-input').value);
-        playerData.k_factor = parseInt(document.getElementById('player-k-factor-input').value);
-        playerData.provisional_games_left = parseInt(document.getElementById('player-provisional-input').value);
-        playerData.rank_tier = document.getElementById('player-rank-tier-input').value;
-    }
 
     let result;
     if (isEditMode) {
-        // Gọi API để cập nhật (PUT)
         result = await apiCall(`/api/players/${editingPlayerId}`, 'PUT', playerData);
     } else {
-        // Gọi API để tạo mới (POST)
         result = await apiCall('/api/players', 'POST', playerData);
     }
 
     if (result) {
         alert(result.message || 'Thao tác thành công!');
         resetPlayerForm();
-        fetchAndRenderPlayers(); // Tải lại danh sách
+        fetchAndRenderPlayers();
     }
 }
 

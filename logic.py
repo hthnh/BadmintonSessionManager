@@ -100,8 +100,8 @@ def suggest_matches(active_players, empty_courts, rules, conn):
         if rules.get('prioritize_rest'):
             total_rest_time = 0
             for p in group:
-                if p['last_played_date']:
-                    last_played = datetime.fromisoformat(p['last_played_date'])
+                if p['session_last_played']: # <-- THAY ĐỔI Ở ĐÂY
+                    last_played = datetime.fromisoformat(p['session_last_played']) # <-- THAY ĐỔI Ở ĐÂY
                     total_rest_time += (now - last_played).total_seconds()
                 else:
                     total_rest_time += 999999
@@ -109,7 +109,7 @@ def suggest_matches(active_players, empty_courts, rules, conn):
                 score -= (total_rest_time / 4) * settings.get('REST_PRIORITY_WEIGHT', 0.01)
 
         if rules.get('prioritize_low_games'):
-            score += sum(p['total_matches_played'] for p in group) * settings.get('LOW_GAMES_PENALTY_WEIGHT', 0.1)
+            score += sum(p['session_matches_played'] for p in group) * settings.get('LOW_GAMES_PENALTY_WEIGHT', 0.1) # <-- THAY ĐỔI Ở ĐÂY
         
         if rules.get('avoid_rematch'):
             team_a, team_b = pairing

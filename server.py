@@ -7,6 +7,7 @@ from api.players import players_api
 from api.courts import courts_api
 from api.suggestions import suggestions_api
 from api.matches import matches_api
+from api.sessions import sessions_api
 from api.settings import settings_api # Thêm dòng này
 # --- Cấu hình và Khởi tạo Ứng dụng ---
 app = Flask(__name__,
@@ -19,7 +20,8 @@ app.register_blueprint(players_api, url_prefix='/api')
 app.register_blueprint(courts_api, url_prefix='/api')
 app.register_blueprint(suggestions_api, url_prefix='/api')
 app.register_blueprint(matches_api, url_prefix='/api')
-app.register_blueprint(settings_api, url_prefix='/api') # Thêm dòng này
+app.register_blueprint(settings_api, url_prefix='/api') 
+app.register_blueprint(sessions_api, url_prefix='/api') 
 
 
 # --- Route chính phục vụ Frontend ---
