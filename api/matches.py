@@ -87,6 +87,7 @@ def finish_match(match_id):
     cursor = conn.cursor()
 
     try:
+        # Cập nhật thống kê cơ bản cho người chơi
         player_rows = cursor.execute(
             'SELECT p.id, p.total_matches_played, p.total_wins, mp.team FROM players p JOIN match_players mp ON p.id = mp.player_id WHERE mp.match_id = ?',
             (match_id,)
@@ -99,40 +100,15 @@ def finish_match(match_id):
             new_win_rate = new_wins / new_total_matches
             
             cursor.execute(
+                '''UPDATE players SET total_matches_played = ?, total_wins = ?, win_rate = ?, last_played_date = datetime('now', 'localtime') WHERE id = ?''',
+                (new_total_matches, new_wins, new_win_rate, row['id'])
+            )
+
+        # Cập nhật trạng thái trận đấu
+        cursor.execute(
             "UPDATE matches SET status = 'finished', end_time = datetime('now', 'localtime'), winning_team = ?, score_A = ?, score_B = ? WHERE id = ?",
             (winning_team, score_a, score_b, match_id)
         )
-
-            cursor.execute(
-                '''UPDATE players SET 
-                       elo_rating = ?, 
-                       total_matches_played = ?, 
-                       total_wins = ?, 
-                       win_rate = ?, 
-                       last_played_date = datetime('now', 'localtime'),
-                       session_matches_played = ?,  -- Dòng mới
-                       session_wins = ?,            -- Dòng mới
-                       session_last_played = datetime('now', 'localtime') -- Dòng mới
-                   WHERE id = ?''',
-                (new_elo, new_total_matches, new_wins, new_win_rate, 
-                 new_session_matches, new_session_wins, player['id'])
-            )
-            cursor.execute('UPDATE match_players SET elo_after = ? WHERE match_id = ? AND player_id = ?',
-                        (new_elo, match_id, player['id']))
-
-        for p in team_a_players:
-            k = logic.get_dynamic_k_factor(p, settings)
-            elo_change = k * (result_for_a - expected_a)
-            update_player_stats(p, elo_change, winning_team == 'A')
-
-        for p in team_b_players:
-            k = logic.get_dynamic_k_factor(p, settings)
-            elo_change = k * ((1 - result_for_a) - (1 - expected_a))
-            update_player_stats(p, elo_change, winning_team == 'B')
-        
-        logic.update_pair_history(team_a_players, cursor)
-        logic.update_pair_history(team_b_players, cursor)
-        
         cursor.execute(
             "UPDATE matches SET status = 'finished', end_time = datetime('now', 'localtime'), winning_team = ?, score_A = ?, score_B = ? WHERE id = ?",
             (winning_team, score_a, score_b, match_id)
