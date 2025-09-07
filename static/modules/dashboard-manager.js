@@ -1,7 +1,7 @@
 // static/modules/dashboard-manager.js (Phiên bản đã sửa lỗi và dọn dẹp)
 
 let allPlayers = []; // Biến toàn cục
-
+let socket;
 // === [MỚI] CÁC HÀM QUẢN LÝ PHIÊN CHƠI ===
 
 async function handleStartSession() {
@@ -166,6 +166,9 @@ function renderOngoingMatches(matches) {
         const div = document.createElement('div');
         div.className = 'history-item-v2 ongoing';
         div.dataset.matchId = match.id;
+        div.dataset.courtId = match.court_id; // <-- THÊM DÒNG NÀY
+
+
         const teamAPlayers = match.team_A.map(p => p.name.split(' ').pop()).join(' & ');
         const teamBPlayers = match.team_B.map(p => p.name.split(' ').pop()).join(' & ');
         div.innerHTML = `
@@ -239,6 +242,9 @@ function renderAttendanceModal() {
         container.appendChild(div);
     });
 }
+
+
+
 
 
 // === HÀM TRUNG TÂM ===
@@ -354,6 +360,49 @@ async function handleAttendanceSave() {
     await refreshDashboard();
 }
 
+/**
+ * [MỚI] Hàm kết nối WebSocket và lắng nghe sự kiện
+ */
+
+function connectWebSocket() {
+    // Kết nối đến server, nó sẽ tự tìm đúng địa chỉ
+    socket = io();
+
+    socket.on('connect', () => {
+        console.log('Connected to server via WebSocket!');
+    });
+
+    // Lắng nghe sự kiện 'score_updated' từ server
+    socket.on('score_updated', (data) => {
+        console.log('Score update received:', data);
+        
+        // Tìm ô điểm trên giao diện và cập nhật
+        const scoreA_element = document.getElementById(`score-a-${data.court_id}`);
+        const scoreB_element = document.getElementById(`score-b-${data.court_id}`);
+
+        if (scoreA_element && scoreB_element) {
+            scoreA_element.value = data.score_A;
+            scoreB_element.value = data.score_B;
+            
+            // Logic kiểm tra điều kiện thắng
+            const scoreA = parseInt(data.score_A, 10);
+            const scoreB = parseInt(data.score_B, 10);
+            if ((scoreA >= 21 || scoreB >= 21) && Math.abs(scoreA - scoreB) >= 2) {
+                // Tìm đúng trận đấu và làm nổi bật nút kết thúc
+                const matchCard = document.querySelector(`.history-item-v2.ongoing[data-court-id="${data.court_id}"]`);
+                if (matchCard) {
+                    const finishButton = matchCard.querySelector('.finish-match-btn');
+                    finishButton.style.backgroundColor = '#198754'; // Màu xanh lá
+                    finishButton.style.borderColor = '#198754';
+                    finishButton.textContent = 'Kết thúc ngay!';
+                }
+            }
+        }
+    });
+}
+
+
+
 
 // === KHỞI TẠO ===
 
@@ -363,6 +412,7 @@ async function handleAttendanceSave() {
 export default function init() {
     checkSessionStatus();
     refreshDashboard();
+    connectWebSocket();
 
     // --- Gán sự kiện cho các nút tĩnh ---
     document.getElementById('manage-courts-btn').addEventListener('click', () => { window.location.href = '/manage-courts'; });

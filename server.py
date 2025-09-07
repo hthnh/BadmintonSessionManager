@@ -1,6 +1,7 @@
 # server.py (Phiên bản cuối cùng, rất gọn gàng)
 from flask import Flask, render_template, send_from_directory
 import os
+from flask_socketio import SocketIO
 
 # Import các Blueprint từ thư mục 'api'
 from api.players import players_api
@@ -8,11 +9,17 @@ from api.courts import courts_api
 from api.suggestions import suggestions_api
 from api.matches import matches_api
 from api.sessions import sessions_api
-from api.settings import settings_api # Thêm dòng này
+from api.settings import settings_api 
+from api.scoreboards import scoreboards_api
+
 # --- Cấu hình và Khởi tạo Ứng dụng ---
 app = Flask(__name__,
             static_folder='static',
             template_folder='templates')
+app.config['SECRET_KEY'] = 'deoaithongminhhontao'
+
+socketio = SocketIO(app)
+
 
 # --- Đăng ký các Blueprint ---
 # Mỗi Blueprint sẽ quản lý một nhóm API với một tiền tố (prefix) riêng
@@ -22,6 +29,8 @@ app.register_blueprint(suggestions_api, url_prefix='/api')
 app.register_blueprint(matches_api, url_prefix='/api')
 app.register_blueprint(settings_api, url_prefix='/api') 
 app.register_blueprint(sessions_api, url_prefix='/api') 
+app.register_blueprint(scoreboards_api, url_prefix='/api')
+
 
 
 # --- Route chính phục vụ Frontend ---
@@ -63,11 +72,17 @@ def create_page():
     return render_template('create.html')
 
 
+@socketio.on('connect')
+def handle_connect():
+    print('Client connected')
 
+@socketio.on('disconnect')
+def handle_disconnect():
+    print('Client disconnected')
 
 
 
 # --- Chạy ứng dụng ---
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    socketio.run(app,debug=True, host='0.0.0.0', port=port)
