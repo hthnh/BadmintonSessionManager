@@ -1,7 +1,7 @@
 # server.py (Phiên bản cuối cùng, rất gọn gàng)
 from flask import Flask, render_template, send_from_directory
 import os
-from flask_socketio import SocketIO
+from extensions import socketio
 
 # Import các Blueprint từ thư mục 'api'
 from api.players import players_api
@@ -18,7 +18,7 @@ app = Flask(__name__,
             template_folder='templates')
 app.config['SECRET_KEY'] = 'deoaithongminhhontao'
 
-socketio = SocketIO(app)
+socketio.init_app(app)
 
 
 # --- Đăng ký các Blueprint ---

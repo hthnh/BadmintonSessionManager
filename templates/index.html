@@ -52,6 +52,7 @@
         <main class="main-content">
             <header class="main-content__header">
                 <h1>Bảng điều khiển trận đấu</h1>
+                <button id="manage-scoreboards-btn" class="button button--secondary">⚙️ Quản lý Bảng điểm</button>
                 
             </header>
             <section id="session-control-bar" class="card" style="margin: 0 1.5rem; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
@@ -149,6 +150,17 @@
             </div>
             <div class="modal-footer">
                 <button id="save-match-result-btn" class="button button--primary">Lưu kết quả</button>
+            </div>
+        </div>
+    </div>
+    <div id="scoreboard-manager-modal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>Quản lý & Gán Bảng điểm</h2>
+                <span id="close-scoreboard-modal" class="close-btn">&times;</span>
+            </div>
+            <div class="modal-body" id="scoreboard-manager-content">
+                <p>Đang tải danh sách sân và thiết bị...</p>
             </div>
         </div>
     </div>

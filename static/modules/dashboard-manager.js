@@ -152,9 +152,10 @@ function renderQueuedMatches(matches) {
     });
 }
 
-/**
- * Render các trận đang diễn ra (ongoing)
- */
+// [CẬP NHẬT] Hàm render các trận đang diễn ra
+// static/modules/dashboard-manager.js
+
+// [CẬP NHẬT] Hàm render các trận đang diễn ra
 function renderOngoingMatches(matches) {
     const container = document.getElementById('active-courts-container');
     container.innerHTML = '';
@@ -166,23 +167,33 @@ function renderOngoingMatches(matches) {
         const div = document.createElement('div');
         div.className = 'history-item-v2 ongoing';
         div.dataset.matchId = match.id;
-        div.dataset.courtId = match.court_id; // <-- THÊM DÒNG NÀY
-
+        div.dataset.courtId = match.court_id;
 
         const teamAPlayers = match.team_A.map(p => p.name.split(' ').pop()).join(' & ');
         const teamBPlayers = match.team_B.map(p => p.name.split(' ').pop()).join(' & ');
+
         div.innerHTML = `
             <div class="history-item-v2__header">
                 <strong>Sân ${match.court_name}</strong>
-                <span class="status-tag">Đang diễn ra</span>
+                <div class="remote-controls">
+                    <button class="button-control reset-btn" data-action="reset">Reset</button>
+                </div>
             </div>
             <div class="history-item-v2__body">
                 <span class="team-name">${teamAPlayers}</span>
-                <span class="score-input-box">
-                     <input type="number" class="score-input" id="score-a-${match.id}" min="0">
-                     -
-                     <input type="number" class="score-input" id="score-b-${match.id}" min="0">
-                </span>
+                
+                <div class="score-display-control-area">
+                    <button class="button-control score-btn dec-btn" data-action="dec_a">-</button>
+                    <span class="score-box realtime-score" id="score-a-${match.court_id}">0</span>
+                    <button class="button-control score-btn inc-btn" data-action="inc_a">+</button>
+                    
+                    <span class="score-divider">-</span>
+
+                    <button class="button-control score-btn dec-btn" data-action="dec_b">-</button>
+                    <span class="score-box realtime-score" id="score-b-${match.court_id}">0</span>
+                    <button class="button-control score-btn inc-btn" data-action="inc_b">+</button>
+                </div>
+
                 <span class="team-name">${teamBPlayers}</span>
             </div>
             <div class="history-item-v2__footer">
@@ -192,7 +203,6 @@ function renderOngoingMatches(matches) {
         container.appendChild(div);
     });
 }
-
 /**
  * Render lịch sử tóm tắt trên dashboard
  */
@@ -244,6 +254,110 @@ function renderAttendanceModal() {
 }
 
 
+// Hàm xử lý khi nhấn nút điều khiển từ xa (+, -, Reset)
+async function handleRemoteControl(e) {
+    // Tìm phần tử nút có class 'button-control' gần nhất với nơi được click
+    const button = e.target.closest('.button-control');
+    
+    // Nếu không click vào nút thì không làm gì cả
+    if (!button) return;
+
+    // Tìm thẻ cha .ongoing để lấy courtId
+    const ongoingMatchCard = button.closest('.ongoing');
+    if (!ongoingMatchCard) return;
+
+    const courtId = ongoingMatchCard.dataset.courtId;
+    const action = button.dataset.action;
+
+    // Ghi log để kiểm tra
+    console.log(`Remote control triggered: Court ID=${courtId}, Action=${action}`);
+
+    if (courtId && action) {
+        // Vô hiệu hóa nút tạm thời để tránh click nhiều lần
+        button.disabled = true;
+        await apiCall('/api/scoreboards/control', 'POST', { court_id: parseInt(courtId), action: action });
+        // Kích hoạt lại nút sau khi request hoàn tất
+        button.disabled = false;
+    }
+}
+
+
+
+// Hàm xử lý việc gán scoreboard
+async function handleAssignScoreboard(e) {
+    if (e.target.tagName !== 'SELECT') return;
+    const courtId = e.target.dataset.courtId;
+    const deviceId = e.target.value;
+
+    if (deviceId === "none") {
+        // (Tùy chọn) Thêm logic hủy gán ở đây nếu cần
+        return;
+    }
+    
+    const result = await apiCall('/api/scoreboards/assign', 'POST', { device_id: deviceId, court_id: parseInt(courtId) });
+    if (result) {
+        alert(result.message);
+        openScoreboardManager(); // Tải lại nội dung modal
+    }
+}
+
+// Hàm render nội dung cho modal quản lý
+function renderScoreboardManager(scoreboards, ongoingMatches, courts) {
+    const content = document.getElementById('scoreboard-manager-content');
+    
+    // Lọc ra các scoreboard chưa được gán
+    const availableBoards = scoreboards.filter(b => b.court_id === null);
+
+    let html = '<h4>Gán bảng điểm cho các sân đang hoạt động:</h4>';
+    
+    if (ongoingMatches.length === 0) {
+        html += '<p>Không có sân nào đang hoạt động.</p>';
+    } else {
+        ongoingMatches.forEach(match => {
+            const assignedBoard = scoreboards.find(b => b.court_id === match.court_id);
+            
+            html += `<div class="assignment-row">
+                        <strong>Sân ${match.court_name}:</strong>`;
+
+            if (assignedBoard) {
+                html += `<span>✔️ Đã gán: ${assignedBoard.device_id}</span>`;
+            } else {
+                let options = '<option value="none">-- Chọn thiết bị --</option>';
+                availableBoards.forEach(board => {
+                    options += `<option value="${board.device_id}">${board.device_id}</option>`;
+                });
+                html += `<select class="scoreboard-assign-select" data-court-id="${match.court_id}">${options}</select>`;
+            }
+            html += `</div>`;
+        });
+    }
+
+    html += '<hr><h4>Tất cả thiết bị trong hệ thống:</h4>';
+    if (scoreboards.length === 0) {
+        html += '<p>Chưa có thiết bị nào được kết nối.</p>';
+    } else {
+        scoreboards.forEach(b => {
+             html += `<div class="device-row">
+                        <strong>${b.device_id}</strong> - 
+                        <span>Trạng thái: ${b.court_id ? `Đang gán cho ${b.court_name}` : 'Sẵn sàng'}</span>
+                      </div>`;
+        });
+    }
+
+    content.innerHTML = html;
+}
+
+
+// Hàm chính để mở modal
+async function openScoreboardManager() {
+    const [scoreboards, ongoingMatches, courts] = await Promise.all([
+        apiCall('/api/scoreboards'),
+        apiCall('/api/matches/ongoing'),
+        apiCall('/api/courts')
+    ]);
+    renderScoreboardManager(scoreboards || [], ongoingMatches || [], courts || []);
+    document.getElementById('scoreboard-manager-modal').style.display = 'block';
+}
 
 
 
@@ -418,6 +532,8 @@ export default function init() {
     document.getElementById('manage-courts-btn').addEventListener('click', () => { window.location.href = '/manage-courts'; });
     document.getElementById('suggest-btn').addEventListener('click', () => { window.location.href = '/create'; });
     document.getElementById('export-history-btn').addEventListener('click', () => { window.location.href = '/history'; });
+    document.getElementById('manage-scoreboards-btn').addEventListener('click', openScoreboardManager);
+
 
     // --- Gán sự kiện cho các modal ---
     const attendanceModal = document.getElementById('attendance-modal');
@@ -435,12 +551,18 @@ export default function init() {
     document.getElementById('close-finish-modal').addEventListener('click', () => finishModal.style.display = 'none');
     document.getElementById('save-match-result-btn').addEventListener('click', handleSaveMatchResult);
 
+    const scoreboardModal = document.getElementById('scoreboard-manager-modal');
+    document.getElementById('close-scoreboard-modal').addEventListener('click', () => scoreboardModal.style.display = 'none');
+    
+
     window.addEventListener('click', (event) => {
         if (event.target == attendanceModal) attendanceModal.style.display = 'none';
         if (event.target == finishModal) finishModal.style.display = 'none';
     });
 
     // --- Sử dụng Event Delegation cho các nút động ---
+    document.getElementById('active-courts-container').addEventListener('click', handleRemoteControl);
     document.getElementById('queue-container').addEventListener('click', handleBeginMatch);
+    scoreboardModal.addEventListener('change', handleAssignScoreboard);
     document.getElementById('active-courts-container').addEventListener('click', handleFinishMatchClick);
 }
