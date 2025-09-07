@@ -112,17 +112,17 @@ def finish_match(match_id):
 
             # Cập nhật cả chỉ số tổng và chỉ số phiên
             cursor.execute(
-                '''UPDATE players SET 
-                    total_matches_played = ?, 
-                    total_wins = ?, 
-                    win_rate = ?, 
-                    last_played_date = datetime('now', 'localtime'),
-                    session_matches_played = session_matches_played + 1,
-                    session_wins = session_wins + ?,
-                    session_last_played = datetime('now', 'localtime')
-                WHERE id = ?''',
-                (new_total_matches, new_total_wins, new_win_rate, is_winner, row['id'])
-            )
+            '''UPDATE players SET 
+                total_matches_played = ?, 
+                total_wins = ?, 
+                win_rate = ?, 
+                last_played_date = datetime('now', 'localtime'),
+                session_matches_played = session_matches_played + 1,
+                session_wins = session_wins + ?,
+                session_last_played = datetime('now', 'localtime')
+            WHERE id = ?''',
+            (new_total_matches, new_total_wins, new_win_rate, is_winner, row['id'])
+        )
 
         # Cập nhật trạng thái trận đấu (giữ nguyên như cũ)
         cursor.execute(
