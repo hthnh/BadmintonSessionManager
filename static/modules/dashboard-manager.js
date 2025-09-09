@@ -477,39 +477,41 @@ async function handleAttendanceSave() {
 /**
  * [MỚI] Hàm kết nối WebSocket và lắng nghe sự kiện
  */
-
 function connectWebSocket() {
-    // Kết nối đến server, nó sẽ tự tìm đúng địa chỉ
     socket = io();
 
     socket.on('connect', () => {
         console.log('Connected to server via WebSocket!');
     });
 
-    // Lắng nghe sự kiện 'score_updated' từ server
     socket.on('score_updated', (data) => {
         console.log('Score update received:', data);
         
-        // Tìm ô điểm trên giao diện và cập nhật
         const scoreA_element = document.getElementById(`score-a-${data.court_id}`);
         const scoreB_element = document.getElementById(`score-b-${data.court_id}`);
 
         if (scoreA_element && scoreB_element) {
-            scoreA_element.value = data.score_A;
-            scoreB_element.value = data.score_B;
+            // Sửa từ .value thành .textContent vì chúng là thẻ <span>
+            scoreA_element.textContent = data.score_A;
+            scoreB_element.textContent = data.score_B;
             
-            // Logic kiểm tra điều kiện thắng
             const scoreA = parseInt(data.score_A, 10);
             const scoreB = parseInt(data.score_B, 10);
+            const matchCard = document.querySelector(`.history-item-v2.ongoing[data-court-id="${data.court_id}"]`);
+            if (!matchCard) return;
+
+            const finishButton = matchCard.querySelector('.finish-match-btn');
+            
+            // Logic kiểm tra điều kiện thắng và thay đổi nút Kết thúc
             if ((scoreA >= 21 || scoreB >= 21) && Math.abs(scoreA - scoreB) >= 2) {
-                // Tìm đúng trận đấu và làm nổi bật nút kết thúc
-                const matchCard = document.querySelector(`.history-item-v2.ongoing[data-court-id="${data.court_id}"]`);
-                if (matchCard) {
-                    const finishButton = matchCard.querySelector('.finish-match-btn');
-                    finishButton.style.backgroundColor = '#198754'; // Màu xanh lá
-                    finishButton.style.borderColor = '#198754';
-                    finishButton.textContent = 'Kết thúc ngay!';
-                }
+                finishButton.style.backgroundColor = '#198754';
+                finishButton.style.borderColor = '#198754';
+                finishButton.textContent = 'Kết thúc ngay!';
+            } else {
+                // Trả lại style cũ nếu điểm số bị giảm xuống
+                finishButton.style.backgroundColor = '';
+                finishButton.style.borderColor = '';
+                finishButton.textContent = 'Kết thúc & Lưu';
             }
         }
     });

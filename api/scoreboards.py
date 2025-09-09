@@ -40,9 +40,10 @@ def update_score_from_device(device_id):
 
     # Thử cập nhật trước
     cursor.execute(
-        "UPDATE scoreboards SET score_A = ?, score_B = ?, last_seen = datetime('now', 'localtime') WHERE device_id = ?",
+        "UPDATE scoreboards SET score_A = ?, score_B = ?, last_seen = datetime('now', 'localtime'), updated_by = 'device' WHERE device_id = ?",
         (score_a, score_b, device_id)
     )
+    conn.commit()
     # Nếu không có hàng nào được cập nhật (thiết bị mới), thì thêm mới
     if cursor.rowcount == 0:
         cursor.execute(
@@ -58,6 +59,12 @@ def update_score_from_device(device_id):
         socketio.emit('score_updated', {
             'court_id': scoreboard['court_id'], 'score_A': score_a, 'score_B': score_b
         })
+
+    if scoreboard and scoreboard['court_id'] is not None:
+        socketio.emit('score_updated', {
+            'court_id': scoreboard['court_id'], 'score_A': score_a, 'score_B': score_b
+        })
+    return jsonify({'message': 'Score updated'}), 200
         
     return jsonify({'message': 'Score updated and device registered if new'}), 200
 
@@ -95,17 +102,14 @@ def control_scoreboard():
         return jsonify({"error": "Missing court_id or action"}), 400
 
     conn = get_db_connection()
-    # Tìm scoreboard được gán cho sân này
     scoreboard = conn.execute("SELECT * FROM scoreboards WHERE court_id = ?", (court_id,)).fetchone()
     
     if not scoreboard:
         conn.close()
         return jsonify({"error": "No scoreboard assigned to this court"}), 404
 
-    # Lấy điểm hiện tại từ CSDL
     score_a, score_b = scoreboard['score_A'], scoreboard['score_B']
 
-    # Thay đổi điểm số dựa trên action
     if action == 'inc_a': score_a += 1
     elif action == 'dec_a' and score_a > 0: score_a -= 1
     elif action == 'inc_b': score_b += 1
@@ -116,17 +120,17 @@ def control_scoreboard():
         conn.close()
         return jsonify({"error": "Invalid action"}), 400
 
-    # Cập nhật điểm mới vào CSDL
-    conn.execute("UPDATE scoreboards SET score_A = ?, score_B = ? WHERE id = ?", (score_a, score_b, scoreboard['id']))
+    conn.execute("UPDATE scoreboards SET score_A = ?, score_B = ?, updated_by = 'web' WHERE id = ?", (score_a, score_b, scoreboard['id']))
     conn.commit()
     conn.close()
 
-    # Phát sự kiện WebSocket cho TẤT CẢ client
-    # Đây là bước quan trọng nhất bị thiếu
+    # [SỬA LỖI] PHÁT TÍN HIỆU WEBSOCKET SAU KHI CẬP NHẬT
     socketio.emit('score_updated', {
         'court_id': court_id,
         'score_A': score_a,
         'score_B': score_b
     })
     
-    return jsonify({'message': 'Action successful', 'new_score_a': score_a, 'new_score_b': score_b}), 200
+    return jsonify({'message': 'Action successful'}), 200
+
+
