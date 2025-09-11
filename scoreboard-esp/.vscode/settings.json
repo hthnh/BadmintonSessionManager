@@ -1,0 +1,5 @@
+{
+    "idf.portWin": "COM5",
+    "C_Cpp.default.compilerPath": "c:\\MinGW\\bin\\gcc.exe",
+    "idf.flashType": "UART"
+}
