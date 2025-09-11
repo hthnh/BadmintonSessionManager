@@ -36,35 +36,17 @@
 
                 <section class="card" style="display: flex; flex-direction: column;">
                     <div class="card__header">
-                         <h2 class="card__title">Xếp cặp</h2>
-                         <div class="toggle-switch">
-                            <input type="checkbox" id="mode-toggle" class="toggle-switch__input" checked>
-                            <label for="mode-toggle" class="toggle-switch__label">
-                                <span class="toggle-switch__text">Manual</span>
-                                <span class="toggle-switch__text">Auto</span>
-                            </label>
-                         </div>
+                         <h2 class="card__title">Xếp cặp thủ công</h2>
                     </div>
                     
-                    <div id="creation-mode-wrapper" class="manual-mode-active" style="flex-grow: 1; display: flex;">
-                        <div id="manual-mode-container" class="creation-mode-content">
-                            <div id="manual-creation-zone">
-                                <div id="court-layout-container"></div>
-                                <div id="confirmation-area">
-                                    <div class="form-group">
-                                        <label for="court-select">Gán vào sân trống:</label>
-                                        <select id="court-select"></select>
-                                    </div>
-                                    <button id="confirm-match-btn" class="button button--primary" disabled>Xác nhận & Đưa vào hàng chờ</button>
-                                    <p id="validation-message" style="color: red; margin-top: 10px; text-align: center; height: 20px;"></p>
+                    <div id="manual-mode-container" style="flex-grow: 1; display: flex; flex-direction: column;">
+                        <div id="manual-creation-zone">
+                            <div id="court-layout-container">
                                 </div>
+                            <div id="confirmation-area">
+                                <button id="confirm-match-btn" class="button button--primary" disabled>Thêm vào hàng chờ</button>
+                                <p id="validation-message" style="color: red; margin-top: 10px; text-align: center; height: 20px;"></p>
                             </div>
-                        </div>
-
-                        <div id="auto-mode-container" class="creation-mode-content">
-                             <div class="list-item-placeholder" style="height: 100%;">
-                                Giao diện gợi ý tự động (Suggest) sẽ được phát triển ở đây.
-                             </div>
                         </div>
                     </div>
                 </section>

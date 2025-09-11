@@ -1,12 +1,12 @@
-// static/modules/create-manager.js (Phiên bản Sửa lỗi TypeError)
+// static/modules/create-manager.js (Final Corrected Version)
 
 // === STATE MANAGEMENT ===
 let availablePlayers = [];
-let availableCourts = [];
 let courtSlots = {
     teamA: [],
     teamB: []
 };
+let draggedPlayerId = null;
 
 // === API CALLS ===
 async function apiCall(url, method = 'GET', body = null) {
@@ -16,13 +16,13 @@ async function apiCall(url, method = 'GET', body = null) {
         const response = await fetch(url, options);
         if (!response.ok) {
             const errorData = await response.json();
-            throw new Error(errorData.error || `Lỗi server: ${response.status}`);
+            throw new Error(errorData.error || `Server error: ${response.status}`);
         }
         if (response.status === 204) return { success: true };
         return response.json();
     } catch (error) {
-        console.error(`Lỗi API call đến ${url}:`, error);
-        alert(`Đã xảy ra lỗi: ${error.message}`);
+        console.error(`API call error to ${url}:`, error);
+        alert(`An error occurred: ${error.message}`);
         return null;
     }
 }
@@ -52,17 +52,10 @@ function renderAvailablePlayerList() {
 
 function renderCourt() {
     const container = document.getElementById('court-layout-container');
-
     const createTeamHTML = (team, teamName) => {
         let playersHTML = team.map(playerId => {
             const player = availablePlayers.find(p => p.id === playerId);
-            
-            // [SỬA LỖI] Kiểm tra xem player có tồn tại không trước khi dùng
-            if (!player) {
-                console.error(`Lỗi: Không tìm thấy người chơi với ID ${playerId} trong danh sách availablePlayers.`);
-                return ''; // Trả về chuỗi rỗng để không làm hỏng giao diện
-            }
-
+            if (!player) return '';
             return `<div class="player-chip" draggable="true" data-player-id="${playerId}">${player.name}</div>`;
         }).join('');
 
@@ -80,23 +73,7 @@ function renderCourt() {
 
     const teamA_HTML = createTeamHTML(courtSlots.teamA, 'A');
     const teamB_HTML = createTeamHTML(courtSlots.teamB, 'B');
-
     container.innerHTML = `<div class="court-layout">${teamA_HTML}<div class="court-net"></div>${teamB_HTML}</div>`;
-}
-
-function renderCourtSelector() {
-    const select = document.getElementById('court-select');
-    select.innerHTML = '';
-    if (availableCourts.length === 0) {
-        select.innerHTML = '<option value="">Không có sân trống</option>';
-        return;
-    }
-    availableCourts.forEach(court => {
-        const option = document.createElement('option');
-        option.value = court.id;
-        option.textContent = court.name;
-        select.appendChild(option);
-    });
 }
 
 function updateUIStates() {
@@ -108,10 +85,7 @@ function updateUIStates() {
 
     if (!isTeamAValid || !isTeamBValid) {
         confirmBtn.disabled = true;
-        validationMsg.textContent = 'Mỗi đội phải có ít nhất 1 người chơi.';
-    } else if (availableCourts.length === 0) {
-        confirmBtn.disabled = true;
-        validationMsg.textContent = 'Không có sân nào trống.';
+        validationMsg.textContent = 'Mỗi đội phải có 1 hoặc 2 người chơi.';
     } else {
         confirmBtn.disabled = false;
         validationMsg.textContent = '';
@@ -124,40 +98,32 @@ function updateUIStates() {
 // === EVENT HANDLERS ===
 
 async function handleConfirmMatch() {
-    const courtId = document.getElementById('court-select').value;
-    if (!courtId) { alert('Vui lòng chọn sân!'); return; }
-
-    const team_A = courtSlots.teamA.map(id => {
-        const p = availablePlayers.find(player => player.id === id);
-        return { id: p.id, name: p.name }; // Chỉ gửi id và name
-    });
-    const team_B = courtSlots.teamB.map(id => {
-        const p = availablePlayers.find(player => player.id === id);
-        return { id: p.id, name: p.name }; // Chỉ gửi id và name
-    });
-    const data = { court_id: parseInt(courtId, 10), team_A, team_B };
+    const team_A = courtSlots.teamA.map(id => ({ id }));
+    const team_B = courtSlots.teamB.map(id => ({ id }));
+    const data = { team_A, team_B };
 
     const result = await apiCall('/api/matches/queue', 'POST', data);
     if (result) {
-        alert(result.message || 'Đã thêm trận đấu vào hàng chờ thành công!');
+        alert(result.message || 'Đã thêm trận vào hàng chờ!');
         window.location.href = '/';
     }
 }
 
-// === DRAG & DROP LOGIC ===
-let draggedPlayerId = null;
+// === DRAG & DROP LOGIC (Corrected) ===
 
 function handleDragStart(e) {
     const target = e.target.closest('[data-player-id]');
     if (!target) return;
     draggedPlayerId = parseInt(target.dataset.playerId, 10);
+    e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/plain', draggedPlayerId);
-    target.classList.add('dragging');
+    setTimeout(() => {
+        target.classList.add('dragging');
+    }, 0);
 }
 
 function handleDragEnd(e) {
-    const target = e.target.closest('[data-player-id]');
-    target?.classList.remove('dragging'); // Thêm optional chaining an toàn hơn
+    e.target.closest('[data-player-id]')?.classList.remove('dragging');
     draggedPlayerId = null;
 }
 
@@ -173,6 +139,7 @@ function handleDragLeave(e) {
     e.target.closest('.court-team-area')?.classList.remove('drag-over');
 }
 
+// [FIXED] This function now correctly updates the state.
 function handleDrop(e) {
     e.preventDefault();
     const teamArea = e.target.closest('.court-team-area');
@@ -180,25 +147,39 @@ function handleDrop(e) {
 
     teamArea.classList.remove('drag-over');
     const targetTeamName = teamArea.dataset.team;
-    const targetTeam = targetTeamName === 'A' ? courtSlots.teamA : courtSlots.teamB;
     
-    if (targetTeam.length >= 2) {
-        alert("Mỗi đội chỉ có tối đa 2 người chơi.");
-        return;
-    }
-
     const droppedPlayerId = parseInt(e.dataTransfer.getData('text/plain'), 10);
-    
-    if (courtSlots.teamA.includes(droppedPlayerId)) {
-        courtSlots.teamA = courtSlots.teamA.filter(id => id !== droppedPlayerId);
-    }
-    if (courtSlots.teamB.includes(droppedPlayerId)) {
-        courtSlots.teamB = courtSlots.teamB.filter(id => id !== droppedPlayerId);
+    if (!droppedPlayerId) return;
+
+    // Create new, clean arrays by filtering out the dropped player from both teams
+    let newTeamA = courtSlots.teamA.filter(id => id !== droppedPlayerId);
+    let newTeamB = courtSlots.teamB.filter(id => id !== droppedPlayerId);
+
+    // Add the player to the correct new team array, checking capacity
+    if (targetTeamName === 'A') {
+        if (newTeamA.length < 2) {
+            newTeamA.push(droppedPlayerId);
+        } else {
+            alert("Đội A đã đủ 2 người chơi.");
+            return; // Abort the drop
+        }
+    } else if (targetTeamName === 'B') {
+        if (newTeamB.length < 2) {
+            newTeamB.push(droppedPlayerId);
+        } else {
+            alert("Đội B đã đủ 2 người chơi.");
+            return; // Abort the drop
+        }
     }
 
-    targetTeam.push(droppedPlayerId);
+    // Atomically update the global state
+    courtSlots.teamA = newTeamA;
+    courtSlots.teamB = newTeamB;
+
+    // Trigger a full UI refresh
     updateUIStates();
 }
+
 
 // === INITIALIZATION ===
 function initializeDragDropListeners() {
@@ -207,6 +188,7 @@ function initializeDragDropListeners() {
 
     playerListContainer.addEventListener('dragstart', handleDragStart);
     playerListContainer.addEventListener('dragend', handleDragEnd);
+    
     courtContainer.addEventListener('dragstart', handleDragStart);
     courtContainer.addEventListener('dragend', handleDragEnd);
     courtContainer.addEventListener('dragover', handleDragOver);
@@ -214,34 +196,13 @@ function initializeDragDropListeners() {
     courtContainer.addEventListener('drop', handleDrop);
 }
 
-function renderInitialPlayerCheckboxes(container) {
-    container.innerHTML = '';
-    allPlayers.sort((a,b) => a.name.localeCompare(b.name)).forEach(player => {
-        const div = document.createElement('div');
-        div.className = 'player-select-item-checkbox';
-        div.innerHTML = `
-            <input type="checkbox" id="player-check-${player.id}" data-player-id="${player.id}">
-            <label for="player-check-${player.id}">${player.name}</label>
-        `;
-        container.appendChild(div);
-    });
-    container.addEventListener('change', handlePlayerSelection);
-}
-
 export default async function init() {
-    const [players, courts, ongoingMatches] = await Promise.all([
-        apiCall('/api/players/available'),
-        apiCall('/api/courts'),
-        apiCall('/api/matches/ongoing')
-    ]);
-
+    const players = await apiCall('/api/players/available');
     availablePlayers = players || [];
-    const busyCourtIds = new Set((ongoingMatches || []).map(m => m.court_id));
-    availableCourts = (courts || []).filter(c => !busyCourtIds.has(c.id));
     
     document.getElementById('confirm-match-btn').addEventListener('click', handleConfirmMatch);
     
-    initializeDragDropListeners();
-    renderCourtSelector();
+    initializeDragDropListeners(); 
+    
     updateUIStates();
 }

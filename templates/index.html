@@ -164,7 +164,28 @@
             </div>
         </div>
     </div>
-
+    <div id="assign-court-modal" class="modal">
+    <div class="modal-content" style="max-width: 450px;">
+        <div class="modal-header">
+            <h2>Gán sân và Bắt đầu trận đấu</h2>
+            <span id="close-assign-modal" class="close-btn">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="assign-court-form" onsubmit="return false;">
+                <input type="hidden" id="assign-match-id-input">
+                <div class="form-group">
+                    <label for="assign-court-select">Chọn sân trống:</label>
+                    <select id="assign-court-select" required>
+                        </select>
+                </div>
+                <p id="assign-court-error" style="color: #dc3545; text-align: center; display: none;">Vui lòng chọn một sân.</p>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button id="confirm-assign-btn" class="button button--primary">Bắt đầu trận</button>
+        </div>
+    </div>
+</div>
     <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
 </body>
 </html>
