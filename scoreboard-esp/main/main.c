@@ -59,8 +59,8 @@
 #define DIGIT_4     GPIO_NUM_26
 
 // [CẬP NHẬT] Chân cho nút bấm (ĐÃ THAY ĐỔI để tránh xung đột với SEG_B_PIN)
-#define BUTTON_A_PIN GPIO_NUM_2
-#define BUTTON_B_PIN GPIO_NUM_4
+#define BUTTON_A_PIN GPIO_NUM_39
+#define BUTTON_B_PIN GPIO_NUM_36
 
 static const char *TAG = "SCOREBOARD";
 volatile bool is_swapped = false;
@@ -68,7 +68,7 @@ volatile bool is_swapped = false;
 const gpio_num_t digit_pins[4] = {DIGIT_1, DIGIT_2, DIGIT_3, DIGIT_4};
 const gpio_num_t seg_pins[8] = {SEG_A_PIN, SEG_B_PIN, SEG_C_PIN, SEG_D_PIN, SEG_E_PIN, SEG_F_PIN, SEG_G_PIN, SEG_DP_PIN};
 
-// Bảng mã cho LED 7 đoạn (gfedcba). Bit 7 là DP, không dùng trong map này.
+// Bảng mã cho LED 7 đoạn (gfedcba). Bit 7là DP, không dùng trong map này.
 const uint8_t digit_map[10] = {
     0b00111111, // 0
     0b00000110, // 1
@@ -231,7 +231,7 @@ static void button_handler_task(void* arg) {
     uint32_t io_num;
     for(;;) {
         if(xQueueReceive(gpio_evt_queue, &io_num, portMAX_DELAY)) {
-            vTaskDelay(pdMS_TO_TICKS(50)); // Debounce
+            vTaskDelay(pdMS_TO_TICKS(80)); // Debounce
             if (gpio_get_level(io_num) == 0) {
                 portENTER_CRITICAL(&score_mutex);
                 
