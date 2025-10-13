@@ -3,6 +3,8 @@ from flask import Flask, render_template, send_from_directory
 from flask_sock import Sock
 import os
 import json
+from extensions import broadcast_to_web, broadcast_to_esp
+
 
 # Import các Blueprint từ thư mục 'api'
 from api.players import players_api
@@ -21,8 +23,12 @@ app.config['SECRET_KEY'] = 'deoaithongminhhontao'
 
 sock = Sock(app)
 
-clients = set()  # danh sách client websocket kết nối
 
+# --- WebSocket Client Management ---
+# [NEW] We now manage two separate collections of clients
+web_clients = set()
+# This dictionary maps a device_id to its websocket connection object
+esp_clients = {} 
  
 
 # --- Đăng ký các Blueprint ---
@@ -76,36 +82,68 @@ def create_page():
     return render_template('create.html')
 
 
-@sock.route('/ws')
-def ws_endpoint(ws):
-    clients.add(ws)
-    print("⚡ ESP connected via WebSocket")
+
+@sock.route('/ws/web')
+def ws_web_endpoint(ws):
+    """Handles WebSocket connections from web browsers."""
+    print("🌍 Web client connected")
+    web_clients.add(ws)
+    try:
+        while True:
+            # Keep connection alive, but we don't expect messages from the web client.
+            ws.receive()
+    except Exception:
+        print("💔 Web client disconnected")
+    finally:
+        if ws in web_clients:
+            web_clients.remove(ws)
+
+@sock.route('/ws/device')
+def ws_device_endpoint(ws):
+    """Handles WebSocket connections from ESP devices."""
+    print("⚡ ESP device connected")
+    device_id = None
     try:
         while True:
             data = ws.receive()
-            if not data:
-                break
+            if not data: break
 
-            print(f"[Recv] {data}")
+            print(f"[Recv from ESP] {data}")
             msg = json.loads(data)
+            
+            if 'device_id' in msg and device_id is None:
+                device_id = msg['device_id']
+                esp_clients[device_id] = ws
+                print(f"Registered device: {device_id}")
 
-            # Broadcast cho các client khác (nếu có dashboard)
-            for client in list(clients):
-                if client != ws:
-                    try:
-                        client.send(json.dumps(msg))
-                    except:
-                        clients.remove(client)
+            if 'score_A' in msg and 'score_B' in msg and device_id:
+                score_a, score_b = msg['score_A'], msg['score_B']
+                
+                # Database Logic
+                conn = get_db_connection()
+                cursor = conn.cursor()
+                cursor.execute(
+                    "UPDATE scoreboards SET score_A = ?, score_B = ?, last_seen = datetime('now', 'localtime'), updated_by = 'device' WHERE device_id = ?",
+                    (score_a, score_b, device_id)
+                )
+                if cursor.rowcount == 0:
+                    cursor.execute("INSERT INTO scoreboards (device_id, score_A, score_B, last_seen) VALUES (?, ?, ?, datetime('now', 'localtime'))", (device_id, score_a, score_b))
+                conn.commit()
+                
+                scoreboard = cursor.execute("SELECT court_id FROM scoreboards WHERE device_id = ?", (device_id,)).fetchone()
+                conn.close()
+                
+                # Notify Web Clients
+                if scoreboard and scoreboard['court_id'] is not None:
+                    payload = {'type': 'score_updated', 'payload': {'court_id': scoreboard['court_id'], 'score_A': score_a, 'score_B': score_b}}
+                    broadcast_to_web(json.dumps(payload))
 
     except Exception as e:
-        print(f"Client error: {e}")
+        print(f"ESP client connection error: {e}")
     finally:
-        clients.remove(ws)
-        print("🔌 ESP disconnected")
-
-
-
-
+        if device_id and device_id in esp_clients:
+            del esp_clients[device_id]
+        print(f"🔌 ESP device {device_id or ''} disconnected")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

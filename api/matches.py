@@ -2,7 +2,7 @@
 from flask import Blueprint, request, jsonify
 import sqlite3
 import logic
-from extensions import socketio
+from extensions import broadcast_to_web, broadcast_to_esp
 
 matches_api = Blueprint('matches_api', __name__)
 
@@ -50,7 +50,6 @@ def queue_match():
 # === [SỬA Ở ĐÂY] CẬP NHẬT HÀM NÀY ===
 @matches_api.route('/matches/<int:match_id>/begin', methods=['POST'])
 def begin_queued_match(match_id):
-    # This endpoint now requires a court_id in the body
     data = request.get_json()
     court_id = data.get('court_id')
     if not court_id:
@@ -59,13 +58,11 @@ def begin_queued_match(match_id):
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # Check if the target court is busy
         is_busy = cursor.execute("SELECT id FROM matches WHERE court_id = ? AND status = 'ongoing'", (court_id,)).fetchone()
         if is_busy:
             conn.close()
             return jsonify({'error': 'The selected court is already in use.'}), 409
 
-        # Step 1: Assign the court and start the match
         cursor.execute(
             "UPDATE matches SET status = 'ongoing', court_id = ?, start_time = datetime('now', 'localtime') WHERE id = ? AND status = 'queued'",
             (court_id, match_id)
@@ -74,7 +71,6 @@ def begin_queued_match(match_id):
             conn.close()
             return jsonify({'error': 'Could not find the match in queue or it has already started'}), 404
 
-        # Step 2: Update consecutive matches for players
         player_rows = cursor.execute("SELECT player_id FROM match_players WHERE match_id = ?", (match_id,)).fetchall()
         player_ids = [row['player_id'] for row in player_rows]
 
@@ -83,14 +79,33 @@ def begin_queued_match(match_id):
             sql = f'UPDATE players SET consecutive_matches = consecutive_matches + 1 WHERE id IN ({placeholders})'
             cursor.execute(sql, player_ids)
         
-        # Step 3: Reset the scoreboard for the assigned court
+        # [UPDATED] Reset scoreboard and broadcast the change
         cursor.execute(
-            "UPDATE scoreboards SET score_A = 0, score_B = 0, updated_by = 'system' WHERE court_id = ?",
+            "UPDATE scoreboards SET score_A = 0, score_B = 0, is_swapped = 0, updated_by = 'system' WHERE court_id = ?",
             (court_id,)
         )
-        socketio.emit('score_updated', {
-            'court_id': court_id, 'score_A': 0, 'score_B': 0
-        })
+        
+        # 1. Notify web clients about the score reset
+        web_payload = {
+            'type': 'score_updated',
+            'payload': {
+                'court_id': court_id, 'score_A': 0, 'score_B': 0
+            }
+        }
+        broadcast_to_web(json.dumps(web_payload))
+
+        # 2. Notify the physical scoreboard to reset
+        scoreboard = cursor.execute("SELECT device_id FROM scoreboards WHERE court_id = ?", (court_id,)).fetchone()
+        if scoreboard and scoreboard['device_id']:
+            esp_payload = {
+                'score_A': 0,
+                'score_B': 0,
+                'is_swapped': 0
+            }
+            broadcast_to_esp(json.dumps(esp_payload), device_id=scoreboard['device_id'])
+        
+        # Also notify about a new match starting so the UI can refresh
+        broadcast_to_web(json.dumps({'type': 'match_started'}))
 
         conn.commit()
         return jsonify({'message': 'The match has officially started!'})
@@ -99,6 +114,7 @@ def begin_queued_match(match_id):
         return jsonify({'error': f'Database error: {e}'}), 500
     finally:
         conn.close()
+
 
 
 
