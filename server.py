@@ -1,7 +1,8 @@
 # server.py (Phiên bản cuối cùng, rất gọn gàng)
 from flask import Flask, render_template, send_from_directory
+from flask_sock import Sock
 import os
-from extensions import socketio
+import json
 
 # Import các Blueprint từ thư mục 'api'
 from api.players import players_api
@@ -18,7 +19,10 @@ app = Flask(__name__,
             template_folder='templates')
 app.config['SECRET_KEY'] = 'deoaithongminhhontao'
 
-socketio.init_app(app)
+sock = Sock(app)
+
+clients = set()  # danh sách client websocket kết nối
+
  
 
 # --- Đăng ký các Blueprint ---
@@ -72,17 +76,36 @@ def create_page():
     return render_template('create.html')
 
 
-@socketio.on('connect')
-def handle_connect():
-    print('Client connected')
+@sock.route('/ws')
+def ws_endpoint(ws):
+    clients.add(ws)
+    print("⚡ ESP connected via WebSocket")
+    try:
+        while True:
+            data = ws.receive()
+            if not data:
+                break
 
-@socketio.on('disconnect')
-def handle_disconnect():
-    print('Client disconnected')
+            print(f"[Recv] {data}")
+            msg = json.loads(data)
+
+            # Broadcast cho các client khác (nếu có dashboard)
+            for client in list(clients):
+                if client != ws:
+                    try:
+                        client.send(json.dumps(msg))
+                    except:
+                        clients.remove(client)
+
+    except Exception as e:
+        print(f"Client error: {e}")
+    finally:
+        clients.remove(ws)
+        print("🔌 ESP disconnected")
 
 
 
-# --- Chạy ứng dụng ---
+
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    socketio.run(app,debug=True, host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,5 +1,11 @@
-Flask==3.0.0
-Flask-SocketIO
-python-socketio
 openai
 python-dotenv
+Flask==2.2.2
+Werkzeug==2.2.2
+Flask-SocketIO==4.3.2
+python-socketio==4.6.1
+python-engineio==3.14.2
+eventlet==0.33.3
+itsdangerous==2.1.2
+Jinja2==3.1.2
+six==1.16.0
