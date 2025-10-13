@@ -53,6 +53,18 @@
             </div>
         </main>
     </div>
+
+    <div id="toast-container"></div>
+
+<div id="confirm-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content">
+        <p id="confirm-modal-text">Are you sure?</p>
+        <div class="modal-actions">
+            <button id="confirm-modal-cancel-btn" class="button button--secondary">Hủy</button>
+            <button id="confirm-modal-confirm-btn" class="button button--danger">Xác nhận</button>
+        </div>
+    </div>
+</div>
     <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
 </body>
 </html>

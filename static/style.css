@@ -1247,3 +1247,111 @@ hr {
     color: #198754;
     font-weight: 700;
 }
+
+/* ==========================================================================
+   Toast Notifications
+   ========================================================================== */
+
+#toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1050;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 320px;
+}
+
+.toast {
+    font-size: 0.95rem;
+    color: #fff;
+    padding: 15px 20px;
+    border-radius: var(--border-radius-medium);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.4s cubic-bezier(0.21, 1.02, 0.73, 1); /* Smooth bounce-out transition */
+    will-change: transform, opacity;
+}
+
+.toast--visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+/* Toast types */
+.toast--info {
+    background-color: #2962ff; /* A neutral blue for info */
+}
+
+.toast--success {
+    background-color: var(--success-color, #28a745);
+}
+
+.toast--error {
+    background-color: var(--danger-color, #dc3545);
+}
+
+
+/* ==========================================================================
+   Confirm Modal
+   ========================================================================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Use a wrapper for the animation */
+#confirm-modal[style*="display: block"] .modal-overlay,
+#finish-match-modal[style*="display: block"] .modal-overlay,
+#add-court-modal[style*="display: block"] .modal-overlay {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background-color: var(--card-bg-color);
+    padding: 25px 30px;
+    border-radius: var(--border-radius-large);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 450px;
+    transform: scale(0.95);
+    transition: transform 0.3s ease;
+    border-top: 4px solid var(--primary-color);
+}
+
+#confirm-modal[style*="display: block"] .modal-content,
+#finish-match-modal[style*="display: block"] .modal-content,
+#add-court-modal[style*="display: block"] .modal-content {
+    transform: scale(1);
+}
+
+.modal-content p,
+#confirm-modal-text {
+    margin: 0 0 20px 0;
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: var(--text-color);
+    text-align: center;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 15px;
+    margin-top: 25px;
+}

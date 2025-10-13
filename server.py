@@ -19,7 +19,7 @@ app = Flask(__name__,
 app.config['SECRET_KEY'] = 'deoaithongminhhontao'
 
 socketio.init_app(app)
-
+ 
 
 # --- Đăng ký các Blueprint ---
 # Mỗi Blueprint sẽ quản lý một nhóm API với một tiền tố (prefix) riêng

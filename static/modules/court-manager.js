@@ -1,4 +1,7 @@
-// static/modules/court-manager.js (Phiên bản cuối cùng, đã sửa lỗi Race Condition)
+// static/modules/court-manager.js (Refactored with Toast and Confirm Modal)
+
+import { showToast } from './toast.js';
+import { showConfirm } from './confirm-modal.js';
 
 const courtTimers = {};
 
@@ -11,12 +14,13 @@ async function apiCall(url, method = 'GET', body = null) {
         const response = await fetch(url, options);
         const responseData = await response.json();
         if (!response.ok) {
-            throw new Error(responseData.error || `Lỗi server: ${response.status}`);
+            throw new Error(responseData.error || `Server error: ${response.status}`);
         }
         return responseData;
     } catch (error) {
-        console.error(`Lỗi API call đến ${url}:`, error);
-        alert(`Đã xảy ra lỗi: ${error.message}`);
+        console.error(`API call error to ${url}:`, error);
+        // Replace alert with error toast
+        showToast(error.message, 'error');
         return null;
     }
 }
@@ -38,18 +42,12 @@ function renderCourtList(courts, ongoingMatches) {
         if (matchOnThisCourt) {
             courtCard.classList.add('status-ongoing');
             courtCard.innerHTML = createOngoingCourtCard(court, matchOnThisCourt);
-            
-            // === SỬA LỖI RACE CONDITION TẠI ĐÂY ===
-            // 1. Thêm card vào trang TRƯỚC
             container.appendChild(courtCard);
-            // 2. SAU KHI card đã có trên trang, mới gọi startTimer
             startTimer(matchOnThisCourt.id, matchOnThisCourt.start_time);
-            // ======================================
 
         } else {
             courtCard.classList.add('status-available');
             courtCard.innerHTML = createAvailableCourtCard(court);
-            // Chỉ appendChild nếu không phải sân đang có trận (vì đã append ở trên)
             container.appendChild(courtCard);
         }
     });
@@ -59,8 +57,6 @@ function startTimer(matchId, startTimeString) {
     if (courtTimers[matchId]) {
         clearInterval(courtTimers[matchId]);
     }
-    console.log(startTimeString);
-
     const timerElement = document.getElementById(`timer-${matchId}`);
     if (!timerElement) return;
 
@@ -68,7 +64,7 @@ function startTimer(matchId, startTimeString) {
     const startTime = new Date(formattedTime);
 
     if (isNaN(startTime.getTime())) {
-        timerElement.textContent = "Lỗi giờ";
+        timerElement.textContent = "Error";
         return;
     }
 
@@ -80,7 +76,6 @@ function startTimer(matchId, startTimeString) {
     }, 1000);
 }
 
-// ... (Toàn bộ các hàm còn lại không thay đổi)
 function stopTimer(matchId) {
     if (courtTimers[matchId]) {
         clearInterval(courtTimers[matchId]);
@@ -143,10 +138,14 @@ async function handleContainerClick(e) {
 
     if (target.classList.contains('delete-court-btn')) {
         const courtName = courtCard.querySelector('h3').textContent;
-        if (confirm(`Bạn có chắc muốn xóa vĩnh viễn sân "${courtName}"?`)) {
+        // Replace confirm with showConfirm modal
+        showConfirm(`Bạn có chắc muốn xóa vĩnh viễn sân "${courtName}"?`, async () => {
             const result = await apiCall(`/api/courts/${courtId}`, 'DELETE');
-            if (result) { alert(result.message); fetchAndRenderData(); }
-        }
+            if (result) {
+                showToast(result.message, 'success');
+                fetchAndRenderData();
+            }
+        });
     } else if (target.classList.contains('assign-match-btn')) {
         window.location.href = '/create';
     } else if (target.classList.contains('finish-match-btn')) {
@@ -161,10 +160,13 @@ async function handleContainerClick(e) {
 async function handleSaveNewCourt() {
     const nameInput = document.getElementById('court-name-input');
     const courtName = nameInput.value.trim();
-    if (!courtName) { alert('Vui lòng nhập tên sân.'); return; }
+    if (!courtName) {
+        showToast('Vui lòng nhập tên sân.', 'error');
+        return;
+    }
     const result = await apiCall('/api/courts', 'POST', { name: courtName });
     if (result) {
-        alert(result.message || 'Thêm sân thành công!');
+        showToast(result.message || 'Thêm sân thành công!', 'success');
         nameInput.value = '';
         document.getElementById('add-court-modal').style.display = 'none';
         fetchAndRenderData();
@@ -190,7 +192,7 @@ async function handleSaveMatchResult() {
     });
 
     if (result) {
-        alert(result.message);
+        showToast(result.message, 'success');
         modal.style.display = 'none';
         document.getElementById('finish-match-form').reset();
         stopTimer(matchId);

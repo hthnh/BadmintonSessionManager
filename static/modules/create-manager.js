@@ -1,4 +1,6 @@
-// static/modules/create-manager.js (Final Corrected Version)
+// static/modules/create-manager.js (Refactored with Toast)
+
+import { showToast } from './toast.js';
 
 // === STATE MANAGEMENT ===
 let availablePlayers = [];
@@ -22,7 +24,8 @@ async function apiCall(url, method = 'GET', body = null) {
         return response.json();
     } catch (error) {
         console.error(`API call error to ${url}:`, error);
-        alert(`An error occurred: ${error.message}`);
+        // Replace alert with error toast
+        showToast(`An error occurred: ${error.message}`, 'error');
         return null;
     }
 }
@@ -104,12 +107,15 @@ async function handleConfirmMatch() {
 
     const result = await apiCall('/api/matches/queue', 'POST', data);
     if (result) {
-        alert(result.message || 'Đã thêm trận vào hàng chờ!');
-        window.location.href = '/';
+        // Replace alert with success toast
+        showToast(result.message || 'Đã thêm trận vào hàng chờ!', 'success');
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 1000); // Add a small delay so user can see the toast
     }
 }
 
-// === DRAG & DROP LOGIC (Corrected) ===
+// === DRAG & DROP LOGIC ===
 
 function handleDragStart(e) {
     const target = e.target.closest('[data-player-id]');
@@ -139,7 +145,6 @@ function handleDragLeave(e) {
     e.target.closest('.court-team-area')?.classList.remove('drag-over');
 }
 
-// [FIXED] This function now correctly updates the state.
 function handleDrop(e) {
     e.preventDefault();
     const teamArea = e.target.closest('.court-team-area');
@@ -151,35 +156,31 @@ function handleDrop(e) {
     const droppedPlayerId = parseInt(e.dataTransfer.getData('text/plain'), 10);
     if (!droppedPlayerId) return;
 
-    // Create new, clean arrays by filtering out the dropped player from both teams
     let newTeamA = courtSlots.teamA.filter(id => id !== droppedPlayerId);
     let newTeamB = courtSlots.teamB.filter(id => id !== droppedPlayerId);
 
-    // Add the player to the correct new team array, checking capacity
     if (targetTeamName === 'A') {
         if (newTeamA.length < 2) {
             newTeamA.push(droppedPlayerId);
         } else {
-            alert("Đội A đã đủ 2 người chơi.");
-            return; // Abort the drop
+            // Replace alert with info toast
+            showToast("Đội A đã đủ 2 người chơi.", 'info');
+            return;
         }
     } else if (targetTeamName === 'B') {
         if (newTeamB.length < 2) {
             newTeamB.push(droppedPlayerId);
         } else {
-            alert("Đội B đã đủ 2 người chơi.");
-            return; // Abort the drop
+            // Replace alert with info toast
+            showToast("Đội B đã đủ 2 người chơi.", 'info');
+            return;
         }
     }
 
-    // Atomically update the global state
     courtSlots.teamA = newTeamA;
     courtSlots.teamB = newTeamB;
-
-    // Trigger a full UI refresh
     updateUIStates();
 }
-
 
 // === INITIALIZATION ===
 function initializeDragDropListeners() {
