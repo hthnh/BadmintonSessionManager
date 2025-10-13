@@ -1,21 +1,17 @@
 # api/players.py
 from flask import Blueprint, request, jsonify
 import sqlite3
+from database import get_db_connection
 
 # Tạo một Blueprint tên là 'players_api'
 # Blueprint giống như một ứng dụng Flask thu nhỏ, có thể được đăng ký vào ứng dụng chính
 players_api = Blueprint('players_api', __name__)
 
-def get_db_connection():
-    conn = sqlite3.connect('badminton.db', timeout=15)
-    conn.row_factory = sqlite3.Row
-    return conn
 
 @players_api.route('/players', methods=['GET'])
 def get_players():
     conn = get_db_connection()
     players = conn.execute('SELECT * FROM players ORDER BY name ASC').fetchall()
-    conn.close()
     return jsonify([dict(row) for row in players])
 
 @players_api.route('/players/<int:player_id>', methods=['GET'])
@@ -23,7 +19,6 @@ def get_player_by_id(player_id):
     conn = get_db_connection()
     # Lấy tất cả các cột dữ liệu của người chơi
     player = conn.execute('SELECT * FROM players WHERE id = ?', (player_id,)).fetchone()
-    conn.close()
     if player is None:
         return jsonify({'error': 'Không tìm thấy người chơi'}), 404
     # Trả về dữ liệu của người chơi dưới dạng JSON
@@ -53,7 +48,6 @@ def add_player():
             ''',
             (name, player_type, gender, contact_info, skill_level))
         conn.commit()
-        conn.close()
         return jsonify({'message': f'Đã thêm thành công người chơi {name}'}), 201
     except sqlite3.IntegrityError:
         return jsonify({'error': 'Lỗi khi thêm người chơi'}), 500
@@ -87,10 +81,8 @@ def update_player(player_id):
     conn.commit()
     
     if cursor.rowcount == 0:
-        conn.close()
         return jsonify({'error': 'Không tìm thấy người chơi'}), 404
     
-    conn.close()
     return jsonify({'message': f'Cập nhật thành công người chơi ID {player_id}'})
 
 @players_api.route('/players/<int:player_id>', methods=['DELETE'])
@@ -100,9 +92,7 @@ def delete_player(player_id):
     cursor.execute('DELETE FROM players WHERE id = ?', (player_id,))
     conn.commit()
     if cursor.rowcount == 0:
-        conn.close()
         return jsonify({'error': 'Không tìm thấy người chơi'}), 404
-    conn.close()
     return jsonify({'message': f'Đã xóa thành công người chơi ID {player_id}'})
 
 # Thêm vào cuối file api/players.py
@@ -117,5 +107,4 @@ def get_available_players():
     conn = get_db_connection()
     query = "SELECT * FROM players WHERE is_active = 1 AND consecutive_matches < 2 ORDER BY name ASC"
     players = conn.execute(query).fetchall()
-    conn.close()
     return jsonify([dict(row) for row in players])

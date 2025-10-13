@@ -3,6 +3,7 @@
 import itertools
 from datetime import datetime
 import sqlite3
+from database import get_db_connection
 
 def load_settings():
     """Tải tất cả cấu hình từ DB và trả về một dictionary."""

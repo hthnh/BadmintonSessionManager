@@ -2,14 +2,11 @@
 from flask import Blueprint, request, jsonify
 import sqlite3
 from extensions import broadcast_to_web, broadcast_to_esp
-
+from database import get_db_connection
 
 scoreboards_api = Blueprint('scoreboards_api', __name__)
 
-def get_db_connection():
-    conn = sqlite3.connect('badminton.db', timeout=15)
-    conn.row_factory = sqlite3.Row
-    return conn
+
 
 # [UPDATED] Return the new 'is_swapped' field
 
@@ -32,7 +29,6 @@ def update_score_from_device(device_id):
         )
     conn.commit()
     scoreboard = cursor.execute("SELECT court_id FROM scoreboards WHERE device_id = ?", (device_id,)).fetchone()
-    conn.close()
 
     # [UPDATED] Notify web clients about the score change.
     if scoreboard and scoreboard['court_id'] is not None:
@@ -66,7 +62,6 @@ def assign_scoreboard():
     # 2. Assign the new device to the court
     conn.execute("UPDATE scoreboards SET court_id = ? WHERE device_id = ?", (court_id, device_id))
     conn.commit()
-    conn.close()
     
     return jsonify({'message': f'Successfully assigned {device_id} to court {court_id}'})
 
@@ -81,7 +76,6 @@ def unassign_scoreboard():
     conn = get_db_connection()
     conn.execute("UPDATE scoreboards SET court_id = NULL WHERE court_id = ?", (court_id,))
     conn.commit()
-    conn.close()
     return jsonify({'message': f'Successfully unassigned scoreboard from court {court_id}'})
 
 
@@ -98,7 +92,6 @@ def get_scoreboards():
         ORDER BY s.device_id ASC
     """
     boards = conn.execute(query).fetchall()
-    conn.close()
     return jsonify([dict(row) for row in boards])
 
 
@@ -136,10 +129,8 @@ def toggle_swap():
                 'is_swapped': updated_board['is_swapped']
             }), device_id=updated_board['device_id'])
 
-        conn.close()
         return jsonify({'message': 'Swap state toggled successfully.'})
     else:
-        conn.close()
         return jsonify({'error': 'No scoreboard found for this court'}), 404
 
 @scoreboards_api.route('/scoreboards/control', methods=['POST'])
@@ -153,7 +144,6 @@ def control_scoreboard():
     conn = get_db_connection()
     scoreboard = conn.execute("SELECT * FROM scoreboards WHERE court_id = ?", (court_id,)).fetchone()
     if not scoreboard:
-        conn.close()
         return jsonify({"error": "No scoreboard assigned to this court"}), 404
 
     score_a, score_b = scoreboard['score_A'], scoreboard['score_B']
@@ -163,12 +153,10 @@ def control_scoreboard():
     elif action == 'dec_b' and score_b > 0: score_b -= 1
     elif action == 'reset': score_a, score_b = 0, 0
     else:
-        conn.close()
         return jsonify({"error": "Invalid action"}), 400
 
     conn.execute("UPDATE scoreboards SET score_A = ?, score_B = ?, updated_by = 'web' WHERE id = ?", (score_a, score_b, scoreboard['id']))
     conn.commit()
-    conn.close()
 
     # [UPDATED] Broadcast the score update to all connected web clients
     payload = {

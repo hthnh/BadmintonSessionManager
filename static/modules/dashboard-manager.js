@@ -2,6 +2,7 @@
 
 import { showToast } from './toast.js';
 import { showConfirm } from './confirm-modal.js';
+import { on as onWebSocketEvent } from './websocket-client.js';
 
 let currentSession = null;
 const courtTimers = {};
@@ -210,11 +211,12 @@ async function handleDeleteQueueItem(e) {
 
 
 // === DATA FETCHING ===
-async function fetchAllData() {
+async function fetchInitialData() {
+    console.log("Fetching initial data...");
     const [session, matches, queue, players] = await Promise.all([
         apiCall('/api/sessions/current'),
         apiCall('/api/matches/ongoing'),
-        apiCall('/api/matches/queue'),
+        apiCall('/api/matches/queued'), // Đã có API này
         apiCall('/api/players/available')
     ]);
 
@@ -226,14 +228,52 @@ async function fetchAllData() {
 }
 
 
+// === [MỚI] HÀM XỬ LÝ CÁC SỰ KIỆN REAL-TIME TỪ WEBSOCKET ===
+function handleScoreUpdate(payload) {
+    console.log("Received score update:", payload);
+    // Cập nhật điểm số trên giao diện mà không cần tải lại toàn bộ
+    const scoreAElement = document.querySelector(`#court-${payload.court_id} .score-a`);
+    const scoreBElement = document.querySelector(`#court-${payload.court_id} .score-b`);
+    if(scoreAElement && scoreBElement) {
+        scoreAElement.textContent = payload.score_A;
+        scoreBElement.textContent = payload.score_B;
+        showToast(`Sân ${payload.court_id} cập nhật điểm!`, 'info');
+    }
+}
+
+
+function handleNewMatchStarted(payload) {
+    showToast('Một trận đấu mới vừa bắt đầu!', 'success');
+    // Tải lại danh sách các trận đang diễn ra và hàng chờ để cập nhật
+    Promise.all([
+        apiCall('/api/matches/ongoing'),
+        apiCall('/api/matches/queue'),
+        apiCall('/api/players/available')
+    ]).then(([matches, queue, players]) => {
+        renderOngoingMatches(matches || []);
+        renderMatchQueue(queue || []);
+        renderAvailablePlayers(players || []);
+    });
+}
+
+function handleMatchFinished(payload) {
+    showToast(`Trận đấu tại sân ${payload.court_name} đã kết thúc!`, 'info');
+     // Tải lại toàn bộ dữ liệu để đảm bảo tính nhất quán
+    fetchInitialData();
+}
+
+
+
 // === INITIALIZATION ===
 export default function init() {
     document.getElementById('start-session-btn')?.addEventListener('click', handleStartSession);
     document.getElementById('end-session-btn')?.addEventListener('click', handleEndSession);
     document.getElementById('match-queue-container')?.addEventListener('click', handleDeleteQueueItem);
 
-    fetchAllData();
+    fetchInitialData(); 
 
-    // Set up a regular poll to refresh data, e.g., every 10 seconds
-    setInterval(fetchAllData, 10000);
+    onWebSocketEvent('score_updated', handleScoreUpdate);
+    onWebSocketEvent('match_started', handleNewMatchStarted);
+    onWebSocketEvent('match_finished', handleMatchFinished); // <-- Backend cần broadcast sự kiện này
+
 }

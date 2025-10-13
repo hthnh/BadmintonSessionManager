@@ -4,6 +4,7 @@ import sqlite3
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
+from database import get_db_connection
 
 # Tải các biến môi trường từ file .env
 load_dotenv()
@@ -19,10 +20,6 @@ except Exception as e:
     print(f"LỖI: Không thể khởi tạo OpenAI client. Hãy chắc chắn bạn đã đặt OPENAI_API_KEY. Lỗi: {e}")
 
 
-def get_db_connection():
-    conn = sqlite3.connect('badminton.db')
-    conn.row_factory = sqlite3.Row
-    return conn
 
 def create_prompt(players, courts_count, rules):
     """Tạo ra một prompt chi tiết cho mô hình AI."""
@@ -82,7 +79,6 @@ def get_suggestions():
     
     # Lấy thông tin sân trống
     empty_courts = conn.execute('SELECT * FROM courts WHERE id NOT IN (SELECT court_id FROM matches WHERE status = "ongoing")').fetchall()
-    conn.close()
 
     if not empty_courts:
          return jsonify({'suggestions': []}) # Không có sân trống
@@ -128,5 +124,5 @@ def get_suggestions():
         return jsonify(suggestions_data)
 
     except Exception as e:
-        ESP_LOGE(TAG, f"Lỗi khi gọi API OpenAI: {e}")
+        print(f"Lỗi khi gọi API OpenAI: {e}")
         return jsonify({'error': f'Đã có lỗi xảy ra khi kết nối với dịch vụ AI: {str(e)}'}), 500

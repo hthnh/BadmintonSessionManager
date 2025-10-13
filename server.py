@@ -3,8 +3,8 @@ from flask import Flask, render_template, send_from_directory
 from flask_sock import Sock
 import os
 import json
-from extensions import broadcast_to_web, broadcast_to_esp
-
+from extensions import broadcast_to_web, esp_clients, web_clients
+import database
 
 # Import các Blueprint từ thư mục 'api'
 from api.players import players_api
@@ -21,15 +21,12 @@ app = Flask(__name__,
             template_folder='templates')
 app.config['SECRET_KEY'] = 'deoaithongminhhontao'
 
+database.init_app(app)
+
 sock = Sock(app)
 
 
-# --- WebSocket Client Management ---
-# [NEW] We now manage two separate collections of clients
-web_clients = set()
-# This dictionary maps a device_id to its websocket connection object
-esp_clients = {} 
- 
+
 
 # --- Đăng ký các Blueprint ---
 # Mỗi Blueprint sẽ quản lý một nhóm API với một tiền tố (prefix) riêng
@@ -49,51 +46,51 @@ app.register_blueprint(scoreboards_api, url_prefix='/api')
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
-
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    
 @app.route('/')
 def home():
-    """Phục vụ trang chủ index.html."""
-    return render_template('index.html')
+    """Phục vụ trang chủ dashboard.html."""
+    return render_template('dashboard.html', active_page='dashboard')
 
 @app.route('/settings')
 def settings_page():
     """Phục vụ trang quản lý settings.html."""
-    return render_template('settings.html')
+    return render_template('settings.html', active_page='settings')
 
 @app.route('/manage-players')
 def players_page():
     """Phục vụ trang quản lý players.html."""
-    return render_template('players.html')
+    return render_template('players.html', active_page='players')
 
 @app.route('/manage-courts')
 def courts_page():
-    """Phục vụ trang quản lý admin.html."""
-    return render_template('courts.html')
+    """Phục vụ trang quản lý courts.html."""
+    return render_template('courts.html', active_page='courts')
 
 @app.route('/history')
 def history_page():
-    """Phục vụ trang quản lý admin.html."""
-    return render_template('history.html')
+    """Phục vụ trang quản lý history.html."""
+    return render_template('history.html', active_page='history')
+
 @app.route('/create')
 def create_page():
     """Phục vụ trang tạo trận đấu thủ công."""
-    return render_template('create.html')
+    return render_template('create.html', active_page='create')
 
 
 
 @sock.route('/ws/web')
 def ws_web_endpoint(ws):
     """Handles WebSocket connections from web browsers."""
-    print("🌍 Web client connected")
+    print(" Web client connected")
     web_clients.add(ws)
     try:
         while True:
             # Keep connection alive, but we don't expect messages from the web client.
             ws.receive()
     except Exception:
-        print("💔 Web client disconnected")
+        print(" Web client disconnected")
     finally:
         if ws in web_clients:
             web_clients.remove(ws)

@@ -1,20 +1,16 @@
 # api/sessions.py
 from flask import Blueprint, jsonify, request
 import sqlite3
+from database import get_db_connection
 
 sessions_api = Blueprint('sessions_api', __name__)
 
-def get_db_connection():
-    conn = sqlite3.connect('badminton.db', timeout=15)
-    conn.row_factory = sqlite3.Row
-    return conn
 
 @sessions_api.route('/sessions/current', methods=['GET'])
 def get_current_session():
     """Lấy thông tin về phiên đang hoạt động."""
     conn = get_db_connection()
     session = conn.execute("SELECT * FROM sessions WHERE status = 'active'").fetchone()
-    conn.close()
     if session:
         return jsonify(dict(session))
     return jsonify(None)
@@ -28,7 +24,6 @@ def start_session():
     # 1. Kiểm tra xem có phiên nào đang hoạt động không
     active_session = cursor.execute("SELECT id FROM sessions WHERE status = 'active'").fetchone()
     if active_session:
-        conn.close()
         return jsonify({'error': 'Một phiên chơi khác đang diễn ra. Vui lòng kết thúc phiên đó trước.'}), 409
 
     try:
@@ -54,8 +49,7 @@ def start_session():
         conn.rollback()
         return jsonify({'error': f'Lỗi database: {e}'}), 500
     finally:
-        conn.close()
-
+        pass
 
 
 
@@ -68,7 +62,6 @@ def end_session():
     # 1. Tìm phiên đang hoạt động
     active_session_row = cursor.execute("SELECT id FROM sessions WHERE status = 'active'").fetchone()
     if not active_session_row:
-        conn.close()
         return jsonify({'error': 'Không có phiên nào đang hoạt động để kết thúc.'}), 404
     
     active_session_id = active_session_row['id']
@@ -88,5 +81,5 @@ def end_session():
     except sqlite3.Error as e:
         conn.rollback()
         return jsonify({'error': f'Lỗi database: {e}'}), 500
-    finally:
-        conn.close()
+    finally:   
+        pass

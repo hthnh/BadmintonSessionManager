@@ -1,19 +1,16 @@
 # api/settings.py
 from flask import Blueprint, jsonify, request
 import sqlite3
+from database import get_db_connection
 
 settings_api = Blueprint('settings_api', __name__)
 
-def get_db_connection():
-    conn = sqlite3.connect('badminton.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+
 
 @settings_api.route('/settings', methods=['GET'])
 def get_settings():
     conn = get_db_connection()
     settings_rows = conn.execute('SELECT key, value FROM settings').fetchall()
-    conn.close()
     settings_dict = {row['key']: row['value'] for row in settings_rows}
     return jsonify(settings_dict)
 
@@ -37,4 +34,4 @@ def update_settings():
         conn.rollback()
         return jsonify({'error': f'Lỗi database: {e}'}), 500
     finally:
-        conn.close()
+        pass

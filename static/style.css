@@ -1355,3 +1355,27 @@ hr {
     gap: 15px;
     margin-top: 25px;
 }
+
+
+
+/* Thêm vào cuối file static/style.css */
+.settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem 2rem;
+    padding: 1.5rem;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--color-secondary);
+    font-size: 0.85rem;
+}
+
+.form-actions {
+    padding: 1.5rem;
+    border-top: 1px solid var(--color-border);
+    text-align: right;
+    margin-top: 1rem;
+}

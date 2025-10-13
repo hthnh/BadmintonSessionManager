@@ -1,3 +1,5 @@
 scoreboard-esp/build/
 venv
 .env
+api/__pycache__
+__pycache__

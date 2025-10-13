@@ -3,15 +3,12 @@ from flask import Blueprint, request, jsonify
 import sqlite3
 import logic
 from extensions import broadcast_to_web, broadcast_to_esp
+from database import get_db_connection
 
 matches_api = Blueprint('matches_api', __name__)
 
-def get_db_connection():
-    conn = sqlite3.connect('badminton.db', timeout=15)
-    conn.row_factory = sqlite3.Row
-    return conn
 
-# === [SỬA Ở ĐÂY] CẬP NHẬT HÀM NÀY ===
+
 @matches_api.route('/matches/queue', methods=['POST'])
 def queue_match():
     data = request.get_json()
@@ -45,9 +42,10 @@ def queue_match():
         conn.rollback()
         return jsonify({'error': f'Database error: {e}'}), 500
     finally:
-        conn.close()
+        pass
 
-# === [SỬA Ở ĐÂY] CẬP NHẬT HÀM NÀY ===
+
+
 @matches_api.route('/matches/<int:match_id>/begin', methods=['POST'])
 def begin_queued_match(match_id):
     data = request.get_json()
@@ -60,7 +58,6 @@ def begin_queued_match(match_id):
     try:
         is_busy = cursor.execute("SELECT id FROM matches WHERE court_id = ? AND status = 'ongoing'", (court_id,)).fetchone()
         if is_busy:
-            conn.close()
             return jsonify({'error': 'The selected court is already in use.'}), 409
 
         cursor.execute(
@@ -68,7 +65,6 @@ def begin_queued_match(match_id):
             (court_id, match_id)
         )
         if cursor.rowcount == 0:
-            conn.close()
             return jsonify({'error': 'Could not find the match in queue or it has already started'}), 404
 
         player_rows = cursor.execute("SELECT player_id FROM match_players WHERE match_id = ?", (match_id,)).fetchall()
@@ -113,7 +109,6 @@ def begin_queued_match(match_id):
         conn.rollback()
         return jsonify({'error': f'Database error: {e}'}), 500
     finally:
-        conn.close()
 
 
 
@@ -165,21 +160,28 @@ def finish_match(match_id):
             (new_total_matches, new_total_wins, new_win_rate, is_winner, row['id'])
         )
 
-        # Cập nhật trạng thái trận đấu (giữ nguyên như cũ)
         cursor.execute(
             "UPDATE matches SET status = 'finished', end_time = datetime('now', 'localtime'), winning_team = ?, score_A = ?, score_B = ? WHERE id = ?",
             (winning_team, score_a, score_b, match_id)
         )
 
-    # ... các phần còn lại của hàm giữ nguyên ...
         
         conn.commit()
-        match_info = cursor.execute("SELECT court_id FROM matches WHERE id = ?", (match_id,)).fetchone()
+
         if match_info:
             court_id = match_info['court_id']
             cursor.execute("UPDATE courts SET session_turns = session_turns + 1 WHERE id = ?", (court_id,))
+            
+            # Lấy tên sân
+            court_row = cursor.execute("SELECT name FROM courts WHERE id = ?", (court_id,)).fetchone()
+            court_name = court_row['name'] if court_row else "Không xác định"
 
-        conn.commit()
+            # [THÊM VÀO] Phát thanh sự kiện trận đấu kết thúc
+            broadcast_to_web(json.dumps({
+                'type': 'match_finished',
+                'payload': {'court_id': court_id, 'court_name': court_name}
+            }))
+
 
         # Logic reset consecutive_matches cho người chơi đã nghỉ
         active_rows = cursor.execute('SELECT id FROM players WHERE is_active = 1').fetchall()
@@ -194,12 +196,17 @@ def finish_match(match_id):
             cursor.execute(sql, rested_ids)
             conn.commit()
 
+        court_name = conn.execute("SELECT name FROM courts WHERE id = ?", (court_id,)).fetchone()['name']
+
+
         return jsonify({'message': 'Trận đấu đã kết thúc và dữ liệu đã được cập nhật.'}), 200
     except sqlite3.Error as e:
         conn.rollback()
         return jsonify({'error': f'Lỗi database: {e}'}), 500
     finally:
-        conn.close()
+        pass
+
+
 
 @matches_api.route('/matches/ongoing', methods=['GET'])
 def get_ongoing_matches():
@@ -220,10 +227,11 @@ def get_ongoing_matches():
             matches[mid] = {'id': mid, 'court_id': row['court_id'], 'court_name': row['court_name'], 'start_time': row['start_time'], 'team_A': [], 'team_B': []}
         player = {'id': row['player_id'], 'name': row['player_name']}
         matches[mid][f"team_{row['team']}"].append(player)
-    conn.close()
     return jsonify(list(matches.values()))
 
-@matches_api.route('/matches/queued', methods=['GET'])
+
+
+@matches_api.route('/matches/queue', methods=['GET'])
 def get_queued_matches():
     # The query is updated to use LEFT JOIN to include matches without a court assigned
     query = """
@@ -251,7 +259,6 @@ def get_queued_matches():
             }
         player = {'id': row['player_id'], 'name': row['player_name']}
         matches[mid][f"team_{row['team']}"].append(player)
-    conn.close()
     return jsonify(list(matches.values()))
 
 
@@ -273,7 +280,6 @@ def get_match_history():
     """
     conn = get_db_connection()
     rows = conn.execute(query).fetchall()
-    conn.close()
     matches = {}
     for row in rows:
         mid = row['match_id']

@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+
+{% block title %}Bảng điều khiển{% endblock %}
+
+{% block content %}
+<header class="main-content__header">
+    <h1>Bảng điều khiển trận đấu</h1>
+    <button id="manage-scoreboards-btn" class="button button--secondary">⚙️ Quản lý Bảng điểm</button>
+</header>
+<section id="session-control-bar" class="card" style="margin: 0 1.5rem; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <strong>Trạng thái phiên:</strong>
+        <span id="session-status-text">Đang tải...</span>
+    </div>
+    <div id="session-action-buttons">
+        </div>
+</section>
+<div class="main-grid-container">
+    <section id="queue-and-courts-column" class="grid-column">
+        <div class="card">
+            <div class="card__header">
+                <h2 class="card__title">Hàng chờ (Queue)</h2>
+                <button id="suggest-btn" class="button button--secondary">Tạo trận</button>
+            </div>
+            <div id="queue-container" class="list-container">
+                <div class="list-item-placeholder">Chưa có trận đấu nào trong hàng chờ.</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card__header">
+                <h2 class="card__title">Các sân đang hoạt động</h2>
+                <button id="manage-courts-btn" class="button button--secondary">Quản lý sân</button>
+            </div>
+            <div id="active-courts-container" class="list-container">
+                <div class="list-item-placeholder">Chưa có sân nào hoạt động.</div>
+            </div>
+        </div>
+    </section>
+    <section id="history-column" class="grid-column">
+        <div class="card">
+            <div class="card__header">
+                <h2 class="card__title">Lịch sử trận đấu</h2>
+                <button id="export-history-btn" class="button button--secondary">Mở rộng</button>
+            </div>
+            <div id="match-history-container" class="list-container list-container--scrollable">
+                <div class="list-item-placeholder">Chưa có lịch sử trận đấu.</div>
+            </div>
+        </div>
+    </section>
+    <section id="players-column" class="grid-column">
+        <div class="card">
+            <div class="card__header">
+                <h2 class="card__title">Người chơi có mặt</h2>
+                <button id="attendance-btn" class="button button--secondary">Điểm danh</button>
+            </div>
+            <div id="active-players-container" class="list-container list-container--scrollable">
+                <div class="list-item-placeholder">Chưa có người chơi nào.</div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block modals %}
+<div id="attendance-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Điểm danh người chơi</h2>
+            <span id="close-attendance-modal" class="close-btn">&times;</span>
+        </div>
+        <div class="modal-body" id="attendance-list-container">
+            </div>
+        <div class="modal-footer">
+            <button id="save-attendance-btn" class="button button--primary">Lưu thay đổi</button>
+        </div>
+    </div>
+</div>
+
+<div id="scoreboard-manager-modal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h2>Quản lý & Gán Bảng điểm</h2>
+            <span id="close-scoreboard-modal" class="close-btn">&times;</span>
+        </div>
+        <div class="modal-body" id="scoreboard-manager-content">
+            <p>Đang tải danh sách sân và thiết bị...</p>
+        </div>
+    </div>
+</div>
+<div id="assign-court-modal" class="modal">
+<div class="modal-content" style="max-width: 450px;">
+    <div class="modal-header">
+        <h2>Gán sân và Bắt đầu trận đấu</h2>
+        <span id="close-assign-modal" class="close-btn">&times;</span>
+    </div>
+    <div class="modal-body">
+        <form id="assign-court-form" onsubmit="return false;">
+            <input type="hidden" id="assign-match-id-input">
+            <div class="form-group">
+                <label for="assign-court-select">Chọn sân trống:</label>
+                <select id="assign-court-select" required>
+                    </select>
+            </div>
+            <p id="assign-court-error" style="color: #dc3545; text-align: center; display: none;">Vui lòng chọn một sân.</p>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button id="confirm-assign-btn" class="button button--primary">Bắt đầu trận</button>
+    </div>
+</div>
+</div>
+{% endblock %}

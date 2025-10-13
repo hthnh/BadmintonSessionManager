@@ -1,190 +1,22 @@
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <title>Lịch sử trận đấu - BSM</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        .history-grid-container {
-            display: grid;
-            grid-template-columns: 1fr; /* Một cột duy nhất */
-            gap: 1.5rem;
-        }
-        .history-card {
-            background-color: var(--color-surface);
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            border-left: 5px solid var(--color-secondary);
-        }
-        .history-card.winner-A { border-left-color: #198754; /* Màu xanh lá */ }
-        .history-card.winner-B { border-left-color: #0d6efd; /* Màu xanh dương */ }
+{% extends "layout.html" %}
 
-        .history-card__header {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--color-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .history-card__header h3 { margin: 0; }
-        .history-card__header span { color: var(--color-secondary); }
+{% block title %}Lịch sử thi đấu{% endblock %}
 
-        .history-card__body {
-            display: flex;
-            justify-content: space-around;
-            padding: 1.5rem;
-            align-items: center;
-        }
-        .team-details { width: 45%; }
-        .team-details h4 {
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid var(--color-border);
-        }
-        .team-details.winner h4 {
-            font-weight: 700;
-            color: var(--color-primary);
-        }
-        .player-elo-info {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-        }
-        .elo-change { font-weight: 700; }
-        .elo-change.positive { color: #198754; }
-        .elo-change.negative { color: #dc3545; }
-        .vs-separator { font-size: 2rem; font-weight: 700; color: var(--color-border); }
-
-        .vs-separator {
-            font-size: 1.5rem; /* Giảm kích thước chữ VS */
-            font-weight: 700;
-            color: var(--color-border);
-            display: flex;
-            flex-direction: column; /* Hiển thị điểm số bên dưới chữ VS */
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        /* [THÊM MỚI] Style cho điểm số */
-        .score-display {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--color-dark);
-            background-color: #e9ecef;
-            padding: 0.5rem 1rem;
-            border-radius: var(--border-radius);
-        }
-
-        /* Thêm vào thẻ <style> trong templates/history.html */
-
-/* CSS cho Modal (sao chép từ players.html) */
-.modal {
-    display: none; position: fixed; z-index: 1000;
-    left: 0; top: 0; width: 100%; height: 100%;
-    overflow: auto; background-color: rgba(0,0,0,0.6);
-    padding-top: 60px;
-}
-.modal-content {
-    background-color: #fefefe; margin: 5% auto; padding: 20px;
-    border: 1px solid #888; width: 80%; max-width: 700px;
-    border-radius: var(--border-radius);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    animation-name: animatetop; animation-duration: 0.4s;
-}
-@keyframes animatetop {
-    from {top: -300px; opacity: 0} to {top: 0; opacity: 1}
-}
-.modal-header {
-    padding: 2px 16px; border-bottom: 1px solid var(--color-border);
-    display: flex; justify-content: space-between; align-items: center;
-}
-.modal-header h2 { color: var(--color-primary); }
-.close-btn { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
-.close-btn:hover, .close-btn:focus { color: black; }
-.modal-body {
-    padding: 1.5rem 1rem; display: grid;
-    grid-template-columns: 1fr 1fr; gap: 1rem 2rem;
-}
-.info-field { padding-bottom: 10px; }
-.info-field label { color: var(--color-secondary); font-weight: 500; display: block; font-size: 0.9rem; }
-.info-field span { font-size: 1.1rem; font-weight: 700; }
-
-/* [MỚI] CSS để biến tên người chơi thành link */
-.player-name-link {
-    cursor: pointer;
-    font-weight: 700;
-}
-.player-name-link:hover {
-    text-decoration: underline;
-    color: var(--color-primary);
-}
-.elo-timeline {
-    font-size: 0.9rem;
-    color: var(--color-secondary);
-    margin-left: 0.5rem;
-}
-    </style>
-</head>
-<body>
-    <div class="page-container">
-        <aside class="sidebar">
-            <div class="sidebar__header"><h4>🏸 <span class="sidebar__logo-text">Navigator</span></h4></div>
-            <nav class="sidebar__nav">
-                <a href="/" class="nav-item"><span class="nav-item__icon">📊</span><span class="nav-item__text">Dashboard</span></a>
-                <a href="/manage-players" class="nav-item"><span class="nav-item__icon">✅</span><span class="nav-item__text">Player Manage</span></a>
-                <a href="/manage-courts" class="nav-item"><span class="nav-item__icon">🏟️</span><span class="nav-item__text">Courts Manage</span></a>
-                <a href="/history" class="nav-item active"><span class="nav-item__icon">📄</span><span class="nav-item__text">History</span></a>
-                <a href="/settings" class="nav-item"><span class="nav-item__icon">⚙️</span><span class="nav-item__text">Settings</span></a>
-            </nav>
-            <div class="sidebar__footer"><div id="clock" class="clock">Đang tải...</div></div>
-        </aside>
-
-        <main class="main-content">
-            <header class="main-content__header">
-                <h1>Lịch sử & Báo cáo</h1>
-            </header>
-            <div id="history-list-container" class="main-grid-container history-grid-container">
-                </div>
-        </main>
+{% block content %}
+<header class="main-content__header">
+    <h1>Lịch sử thi đấu</h1>
+    <div class="header-actions">
+        <input type="text" id="history-search-input" placeholder="Tìm kiếm người chơi, sân..." class="form-input">
     </div>
-
-    <div id="player-detail-modal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h2 id="modal-player-name">Chi tiết người chơi</h2>
-            <span class="close-btn">&times;</span>
+</header>
+<div class="main-grid-container main-grid-container--single-column">
+    <section class="card">
+        <div id="history-list-container" class="list-container list-container--scrollable">
+            <div class="list-item-placeholder">Đang tải lịch sử...</div>
         </div>
-        <div class="modal-body">
-            <div class="info-field"><label>ID</label><span id="detail-id"></span></div>
-            <div class="info-field"><label>Tên</label><span id="detail-name"></span></div>
-            <div class="info-field"><label>Ngày tham gia</label><span id="detail-join_date"></span></div>
-            <div class="info-field"><label>Loại hình</label><span id="detail-type"></span></div>
-            <div class="info-field"><label>Giới tính</label><span id="detail-gender"></span></div>
-            <div class="info-field"><label>Số điện thoại</label><span id="detail-contact_info"></span></div>
-            <div class="info-field"><label>Trạng thái</label><span id="detail-is_active"></span></div>
-            <hr style="grid-column: 1 / -1;">
-            <div class="info-field"><label>Tổng số trận</label><span id="detail-total_matches_played"></span></div>
-            <div class="info-field"><label>Tổng số trận thắng</label><span id="detail-total_wins"></span></div>
-            <div class="info-field"><label>Tỷ lệ thắng</label><span id="detail-win_rate"></span></div>
-            <div class="info-field"><label>Lần chơi cuối</label><span id="detail-last_played_date"></span></div>
-            <div class="info-field"><label>Số buổi đã tham gia</label><span id="detail-total_sessions_attended"></span></div>
-            
-        </div>
-    </div>
+    </section>
 </div>
+{% endblock %}
 
-
-<div id="toast-container"></div>
-
-<div id="confirm-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-content">
-        <p id="confirm-modal-text">Are you sure?</p>
-        <div class="modal-actions">
-            <button id="confirm-modal-cancel-btn" class="button button--secondary">Hủy</button>
-            <button id="confirm-modal-confirm-btn" class="button button--danger">Xác nhận</button>
-        </div>
-    </div>
-</div>
-    <script src="{{ url_for('static', filename='app.js') }}" type="module"></script>
-</body>
-</html>
+{% block modals %}
+{% endblock %}
