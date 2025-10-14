@@ -1379,3 +1379,292 @@ hr {
     text-align: right;
     margin-top: 1rem;
 }
+
+.courts-grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        .court-card {
+            background-color: var(--color-surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            display: flex;
+            flex-direction: column;
+        }
+        .court-card__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+        .court-card__header h3 { margin: 0; color: var(--color-primary); }
+        .court-card__actions .button { margin-left: 0.5rem; padding: 0.4rem 0.8rem; }
+        .court-card__body {
+            padding: 1.5rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 1rem;
+            height: 200px;
+        }
+        .player-slot {
+            background-color: #e9ecef;
+            border: 2px dashed #ced4da;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-secondary);
+            font-style: italic;
+        }
+
+
+
+.history-grid-container {
+            display: grid;
+            grid-template-columns: 1fr; /* Một cột duy nhất */
+            gap: 1.5rem;
+        }
+        .history-card {
+            background-color: var(--color-surface);
+            border-radius: var(--border-radius);
+            box-shadow: var(--box-shadow);
+            border-left: 5px solid var(--color-secondary);
+        }
+        .history-card.winner-A { border-left-color: #198754; /* Màu xanh lá */ }
+        .history-card.winner-B { border-left-color: #0d6efd; /* Màu xanh dương */ }
+
+        .history-card__header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-card__header h3 { margin: 0; }
+        .history-card__header span { color: var(--color-secondary); }
+
+        .history-card__body {
+            display: flex;
+            justify-content: space-around;
+            padding: 1.5rem;
+            align-items: center;
+        }
+        .team-details { width: 45%; }
+        .team-details h4 {
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--color-border);
+        }
+        .team-details.winner h4 {
+            font-weight: 700;
+            color: var(--color-primary);
+        }
+        .player-elo-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+        }
+        .elo-change { font-weight: 700; }
+        .elo-change.positive { color: #198754; }
+        .elo-change.negative { color: #dc3545; }
+        .vs-separator { font-size: 2rem; font-weight: 700; color: var(--color-border); }
+
+        .vs-separator {
+            font-size: 1.5rem; /* Giảm kích thước chữ VS */
+            font-weight: 700;
+            color: var(--color-border);
+            display: flex;
+            flex-direction: column; /* Hiển thị điểm số bên dưới chữ VS */
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* [THÊM MỚI] Style cho điểm số */
+        .score-display {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--color-dark);
+            background-color: #e9ecef;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+        }
+
+        /* Thêm vào thẻ <style> trong templates/history.html */
+
+/* CSS cho Modal (sao chép từ players.html) */
+.modal {
+    display: none; position: fixed; z-index: 1000;
+    left: 0; top: 0; width: 100%; height: 100%;
+    overflow: auto; background-color: rgba(0,0,0,0.6);
+    padding-top: 60px;
+}
+.modal-content {
+    background-color: #fefefe; margin: 5% auto; padding: 20px;
+    border: 1px solid #888; width: 80%; max-width: 700px;
+    border-radius: var(--border-radius);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    animation-name: animatetop; animation-duration: 0.4s;
+}
+@keyframes animatetop {
+    from {top: -300px; opacity: 0} to {top: 0; opacity: 1}
+}
+.modal-header {
+    padding: 2px 16px; border-bottom: 1px solid var(--color-border);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.modal-header h2 { color: var(--color-primary); }
+.close-btn { color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+.close-btn:hover, .close-btn:focus { color: black; }
+.modal-body {
+    padding: 1.5rem 1rem; display: grid;
+    grid-template-columns: 1fr 1fr; gap: 1rem 2rem;
+}
+.info-field { padding-bottom: 10px; }
+.info-field label { color: var(--color-secondary); font-weight: 500; display: block; font-size: 0.9rem; }
+.info-field span { font-size: 1.1rem; font-weight: 700; }
+
+/* [MỚI] CSS để biến tên người chơi thành link */
+.player-name-link {
+    cursor: pointer;
+    font-weight: 700;
+}
+.player-name-link:hover {
+    text-decoration: underline;
+    color: var(--color-primary);
+}
+.elo-timeline {
+    font-size: 0.9rem;
+    color: var(--color-secondary);
+    margin-left: 0.5rem;
+}
+
+
+
+.player-grid-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+        }
+        .player-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            border: 1px solid var(--color-border);
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            transition: box-shadow 0.2s;
+        }
+        .player-card:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+        .player-info { display: flex; align-items: center; gap: 1rem; }
+        .player-avatar {
+            width: 50px;
+            height: 50px;
+            background-color: var(--color-primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .player-details h5 { margin: 0; font-size: 1.1rem; }
+        .player-details p { margin: 0; color: var(--color-secondary); }
+        .player-actions button { margin-left: 0.5rem; }
+        .form-card { position: sticky; top: 1.5rem; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+
+        /* [MỚI] CSS cho Modal chi tiết người chơi */
+        .modal {
+            display: none; /* Mặc định ẩn */
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6); /* Lớp nền mờ */
+            padding-top: 60px;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 700px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            animation-name: animatetop;
+            animation-duration: 0.4s
+        }
+        @keyframes animatetop {
+            from {top: -300px; opacity: 0}
+            to {top: 0; opacity: 1}
+        }
+        .modal-header {
+            padding: 2px 16px;
+            border-bottom: 1px solid var(--color-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h2 {
+            color: var(--color-primary);
+        }
+        .close-btn {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-btn:hover, .close-btn:focus {
+            color: black;
+        }
+        .modal-body {
+            padding: 1.5rem 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Chia thông tin làm 2 cột */
+            gap: 1rem 2rem;
+        }
+        .info-field {
+            padding-bottom: 10px;
+        }
+        .info-field label {
+            color: var(--color-secondary);
+            font-weight: 500;
+            display: block;
+            font-size: 0.9rem;
+        }
+        .info-field span {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+        /* [MỚI] CSS cho phần cài đặt nâng cao trong form */
+        .advanced-settings {
+            display: none; /* Mặc định ẩn */
+            border-top: 1px solid var(--color-border);
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .toggle-advanced {
+            color: var(--color-primary);
+            cursor: pointer;
+            font-weight: 700;
+            text-align: right;
+            margin-top: 1rem;
+        }
+
+
+        

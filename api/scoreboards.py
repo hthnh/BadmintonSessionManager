@@ -45,7 +45,7 @@ def assign_scoreboard():
         # Assign the new board
         cursor.execute("UPDATE scoreboards SET court_id = ? WHERE device_id = ?", (court_id, device_id))
         
-        conn.commit();
+        conn.commit()
         
         # --- TÍCH HỢP SOCKET.IO ---
         socketio.emit('scoreboard_assignment_changed', {'court_id': court_id, 'device_id': device_id})
@@ -166,3 +166,34 @@ def control_scoreboard():
     except sqlite3.Error as e:
         conn.rollback()
         return jsonify({'error': str(e)}), 500
+
+
+
+
+
+@scoreboards_api.route('/scoreboards/<device_id>/score', methods=['POST'])
+def update_score_from_device(device_id):
+    data = request.get_json()
+    score_a = data.get('score_A', 0)
+    score_b = data.get('score_B', 0)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE scoreboards SET score_A = ?, score_B = ?, last_seen = datetime('now', 'localtime'), updated_by = 'device' WHERE device_id = ?",
+        (score_a, score_b, device_id)
+    )
+    if cursor.rowcount == 0:
+        cursor.execute(
+            "INSERT INTO scoreboards (device_id, score_A, score_B, last_seen) VALUES (?, ?, ?, datetime('now', 'localtime'))",
+            (device_id, score_a, score_b)
+        )
+    conn.commit()
+    scoreboard = cursor.execute("SELECT court_id FROM scoreboards WHERE device_id = ?", (device_id,)).fetchone()
+    if scoreboard and scoreboard['court_id'] is not None:
+        socketio.emit('score_updated', {
+            'court_id': scoreboard['court_id'], 'score_A': score_a, 'score_B': score_b
+        })
+    return jsonify({'message': 'Score updated'}), 200
+
+
+

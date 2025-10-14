@@ -48,8 +48,7 @@ def start_session():
     except sqlite3.Error as e:
         conn.rollback()
         return jsonify({'error': f'Lỗi database: {e}'}), 500
-    finally:
-        pass
+
 
 
 
@@ -81,5 +80,3 @@ def end_session():
     except sqlite3.Error as e:
         conn.rollback()
         return jsonify({'error': f'Lỗi database: {e}'}), 500
-    finally:   
-        pass

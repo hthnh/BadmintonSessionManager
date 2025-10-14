@@ -43,13 +43,13 @@ def create_app():
     app = Flask(__name__,
                 static_folder='static',
                 template_folder='templates')
-    app.config['SECRET_KEY'] = 'deoaithongminhhontao' # (Taken from original)
+    app.config['SECRET_KEY'] = 'deoaithongminhhontao' 
 
     # --- Initialize Extensions ---
-    database.init_app(app)     # (From upgraded ...6307...)
-    socketio.init_app(app)     # (From original ...7457...)
+    database.init_app(app)     
+    socketio.init_app(app)    
     
-    # --- Register API Blueprints ---
+    # --- Register API Blueprints ---   
     app.register_blueprint(players_api, url_prefix='/api')
     app.register_blueprint(courts_api, url_prefix='/api')
     app.register_blueprint(suggestions_api, url_prefix='/api')
@@ -63,7 +63,7 @@ def create_app():
 app = create_app()
 
 # --- HTML Routes ---
-# (Using the upgraded ...6307... template structure)
+
 @app.route('/favicon.ico')
 def favicon():
     return send_from_directory(os.path.join(app.root_path, 'static'),
@@ -72,7 +72,7 @@ def favicon():
 @app.route('/')
 def home():
     """Serves the main dashboard page."""
-    # (Uses dashboard.html from ...6307... upgrade)
+
     return render_template('dashboard.html', active_page='dashboard')
 
 @app.route('/settings')
@@ -102,7 +102,7 @@ def create_page():
 
 
 # --- SocketIO Handlers for WEB Clients ---
-# (Restored from original ...7457...)
+
 @socketio.on('connect')
 def handle_web_connect():
     """Handles new web client connections."""
