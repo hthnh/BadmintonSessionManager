@@ -109,7 +109,7 @@ def begin_queued_match(match_id):
         conn.rollback()
         return jsonify({'error': f'Database error: {e}'}), 500
     finally:
-
+        pass
 
 
 
@@ -231,7 +231,7 @@ def get_ongoing_matches():
 
 
 
-@matches_api.route('/matches/queue', methods=['GET'])
+@matches_api.route('/matches/queued', methods=['GET'])
 def get_queued_matches():
     # The query is updated to use LEFT JOIN to include matches without a court assigned
     query = """
