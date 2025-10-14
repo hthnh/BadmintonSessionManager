@@ -1,52 +1,53 @@
-// static/app.js
+// Filename: static/app.js
+// (Restored 100% from original ...7457... version)
 
+/*
+This is the main entry point for all JavaScript modules.
+It acts as a client-side router, loading the specific
+manager module required for the current page.
+*/
 
+import initDashboard from './modules/dashboard-manager.js';
 import initPlayerManager from './modules/player-manager.js';
-import initDashboardManager from './modules/dashboard-manager.js';
 import initCourtManager from './modules/court-manager.js';
-import initHistoryManager from './modules/history-manager.js'; 
-import initCreateManager from './modules/create-manager.js';
 import initSettingsManager from './modules/settings-manager.js';
+import initHistoryManager from './modules/history-manager.js';
+import initCreateManager from './modules/create-manager.js';
+
 /**
- * Hàm cập nhật đồng hồ ở sidebar
+ * Updates the digital clock in the sidebar.
  */
 function updateClock() {
     const clockElement = document.getElementById('clock');
     if (clockElement) {
-        const now = new Date();
-
-        // Sử dụng một mẹo nhỏ với locale 'sv-SE' (Thụy Điển) để có định dạng YYYY-MM-DD HH:MM:SS
-        // Sau đó thay thế khoảng trắng ở giữa bằng chữ 'T' nếu muốn chuẩn ISO đầy đủ
-        const isoString = now.toLocaleString('sv-SE').replace(' ', '   '); // Dùng 3 khoảng trắng cho dễ nhìn
-
-        clockElement.textContent = isoString; // Kết quả: 2025-08-13   13:23:05
+        clockElement.textContent = new Date().toLocaleTimeString('vi-VN');
     }
 }
-/**
- * Hàm khởi tạo chính của toàn bộ ứng dụng
- */
-function initializeApp() {
-    console.log("Ứng dụng đang khởi tạo...");
-    
-    updateClock();
-    setInterval(updateClock, 1000);
 
+/**
+ * Main initialization logic.
+ * Runs when the DOM is fully loaded.
+ */
+document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
 
-    if (path.includes('/manage-players')) {
+    // Route based on the current page path
+    if (path === '/') {
+        // This will now run the restored dashboard-manager.js
+        initDashboard();
+    } else if (path === '/manage-players') {
         initPlayerManager();
-    } else if (path.includes('/manage-courts')) {
+    } else if (path === '/manage-courts') {
         initCourtManager();
-    } else if (path.includes('/history')) {
-        initHistoryManager();
-    } else if (path.includes('/create')) { 
-        initCreateManager();
-    } else if (path === '/') {
-        initDashboardManager();
-    }else if (path.includes('/settings')) { // Thêm điều kiện này
+    } else if (path === '/settings') {
         initSettingsManager();
+    } else if (path === '/history') {
+        initHistoryManager();
+    } else if (path === '/create') {
+        initCreateManager();
     }
-    console.log("Ứng dụng đã khởi tạo thành công!");
-}
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+    // Initialize and update the clock
+    updateClock();
+    setInterval(updateClock, 1000);
+});

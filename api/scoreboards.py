@@ -1,181 +1,168 @@
-# api/scoreboards.py
-from flask import Blueprint, request, jsonify
+# Filename: api/scoreboards.py
+"""
+API endpoints for managing scoreboards (physical devices).
+- Refactored to use the central database connection.
+- Integrated with SocketIO to emit real-time state changes to the web client.
+"""
+
+from flask import Blueprint, jsonify, request
 import sqlite3
-from extensions import broadcast_to_web, broadcast_to_esp
+
+# --- IMPORTS MỚI ---
 from database import get_db_connection
+from extensions import socketio # Quan trọng: import socketio để phát sự kiện
 
 scoreboards_api = Blueprint('scoreboards_api', __name__)
 
+@scoreboards_api.route('/scoreboards', methods=['GET'])
+def get_all_scoreboards():
+    """Fetches all registered scoreboard devices."""
+    try:
+        conn = get_db_connection()
+        cursor = conn.execute("SELECT * FROM scoreboards")
+        scoreboards = [dict(row) for row in cursor.fetchall()]
+        return jsonify(scoreboards)
+    except sqlite3.Error as e:
+        return jsonify({'error': str(e)}), 500
 
-
-# [UPDATED] Return the new 'is_swapped' field
-
-# This function remains unchanged
-@scoreboards_api.route('/scoreboards/<device_id>/score', methods=['POST'])
-def update_score_from_device(device_id):
-    data = request.get_json()
-    score_a = data.get('score_A', 0)
-    score_b = data.get('score_B', 0)
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE scoreboards SET score_A = ?, score_B = ?, last_seen = datetime('now', 'localtime'), updated_by = 'device' WHERE device_id = ?",
-        (score_a, score_b, device_id)
-    )
-    if cursor.rowcount == 0:
-        cursor.execute(
-            "INSERT INTO scoreboards (device_id, score_A, score_B, last_seen) VALUES (?, ?, ?, datetime('now', 'localtime'))",
-            (device_id, score_a, score_b)
-        )
-    conn.commit()
-    scoreboard = cursor.execute("SELECT court_id FROM scoreboards WHERE device_id = ?", (device_id,)).fetchone()
-
-    # [UPDATED] Notify web clients about the score change.
-    if scoreboard and scoreboard['court_id'] is not None:
-        payload = {
-            'type': 'score_updated',
-            'payload': {
-                'court_id': scoreboard['court_id'],
-                'score_A': score_a,
-                'score_B': score_b
-            }
-        }
-        broadcast_to_web(json.dumps(payload))
-        
-    return jsonify({'message': 'Score updated via HTTP'}), 200
-
-
-
-# [UPDATED] More robust assignment logic
 @scoreboards_api.route('/scoreboards/assign', methods=['POST'])
 def assign_scoreboard():
+    """Assigns a scoreboard device to a court."""
     data = request.get_json()
     device_id = data.get('device_id')
     court_id = data.get('court_id')
 
     if not device_id or not court_id:
-        return jsonify({'error': 'Missing device_id or court_id'}), 400
+        return jsonify({'error': 'Device ID and Court ID are required'}), 400
 
-    conn = get_db_connection()
-    # 1. Unassign any device that might currently be on the target court
-    conn.execute("UPDATE scoreboards SET court_id = NULL WHERE court_id = ?", (court_id,))
-    # 2. Assign the new device to the court
-    conn.execute("UPDATE scoreboards SET court_id = ? WHERE device_id = ?", (court_id, device_id))
-    conn.commit()
-    
-    return jsonify({'message': f'Successfully assigned {device_id} to court {court_id}'})
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-# [NEW] Endpoint to unassign a scoreboard
+        # Unassign any existing board from the target court first
+        cursor.execute("UPDATE scoreboards SET court_id = NULL WHERE court_id = ?", (court_id,))
+        
+        # Assign the new board
+        cursor.execute("UPDATE scoreboards SET court_id = ? WHERE device_id = ?", (court_id, device_id))
+        
+        conn.commit();
+        
+        # --- TÍCH HỢP SOCKET.IO ---
+        socketio.emit('scoreboard_assignment_changed', {'court_id': court_id, 'device_id': device_id})
+        print(f"[API] Emitted 'scoreboard_assignment_changed' for court {court_id}.")
+
+        return jsonify({'message': f'Scoreboard {device_id} assigned to court {court_id}'}), 200
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+
 @scoreboards_api.route('/scoreboards/unassign', methods=['POST'])
 def unassign_scoreboard():
+    """Unassigns any scoreboard from a specific court."""
     data = request.get_json()
     court_id = data.get('court_id')
+
     if not court_id:
-        return jsonify({'error': 'Missing court_id'}), 400
-    
-    conn = get_db_connection()
-    conn.execute("UPDATE scoreboards SET court_id = NULL WHERE court_id = ?", (court_id,))
-    conn.commit()
-    return jsonify({'message': f'Successfully unassigned scoreboard from court {court_id}'})
+        return jsonify({'error': 'Court ID is required'}), 400
 
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE scoreboards SET court_id = NULL WHERE court_id = ?", (court_id,))
+        conn.commit()
 
+        # --- TÍCH HỢP SOCKET.IO ---
+        socketio.emit('scoreboard_assignment_changed', {'court_id': court_id, 'device_id': None})
+        print(f"[API] Emitted 'scoreboard_assignment_changed' for court {court_id} (unassigned).")
 
-
-
-@scoreboards_api.route('/scoreboards', methods=['GET'])
-def get_scoreboards():
-    conn = get_db_connection()
-    query = """
-        SELECT s.id, s.device_id, s.court_id, s.score_A, s.score_B, s.last_seen, s.is_swapped, c.name as court_name
-        FROM scoreboards s
-        LEFT JOIN courts c ON s.court_id = c.id
-        ORDER BY s.device_id ASC
-    """
-    boards = conn.execute(query).fetchall()
-    return jsonify([dict(row) for row in boards])
-
-
-
+        return jsonify({'message': f'Scoreboard unassigned from court {court_id}'}), 200
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @scoreboards_api.route('/scoreboards/toggle-swap', methods=['POST'])
 def toggle_swap():
+    """Toggles the is_swapped state for a scoreboard assigned to a court."""
     data = request.get_json()
     court_id = data.get('court_id')
+
     if not court_id:
-        return jsonify({'error': 'Missing court_id'}), 400
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute(
-        "UPDATE scoreboards SET is_swapped = 1 - is_swapped WHERE court_id = ?",
-        (court_id,)
-    )
-    conn.commit()
+        return jsonify({'error': 'Court ID is required'}), 400
     
-    if cursor.rowcount > 0:
-        updated_board = conn.execute("SELECT * FROM scoreboards WHERE court_id = ?", (court_id,)).fetchone()
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
         
-        # [UPDATED] Broadcast state change to web clients via standard WebSocket
-        broadcast_to_web(json.dumps({
-            'type': 'board_state_updated',
-            'payload': dict(updated_board)
-        }))
+        # Toggle the boolean value
+        cursor.execute("UPDATE scoreboards SET is_swapped = NOT is_swapped WHERE court_id = ?", (court_id,))
+        conn.commit()
 
-        # [UPDATED] Send updated state to the physical scoreboard
-        if updated_board['device_id']:
-            broadcast_to_esp(json.dumps({
-                'score_A': updated_board['score_A'],
-                'score_B': updated_board['score_B'],
-                'is_swapped': updated_board['is_swapped']
-            }), device_id=updated_board['device_id'])
+        # Get the new state to broadcast
+        new_state = cursor.execute("SELECT is_swapped FROM scoreboards WHERE court_id = ?", (court_id,)).fetchone()
+        if new_state:
+            # --- TÍCH HỢP SOCKET.IO ---
+            payload = {'court_id': court_id, 'is_swapped': new_state['is_swapped']}
+            socketio.emit('board_state_updated', payload)
+            print(f"[API] Emitted 'board_state_updated': {payload}")
 
-        return jsonify({'message': 'Swap state toggled successfully.'})
-    else:
-        return jsonify({'error': 'No scoreboard found for this court'}), 404
+        return jsonify({'message': 'Swap state toggled'}), 200
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
 
 @scoreboards_api.route('/scoreboards/control', methods=['POST'])
 def control_scoreboard():
+    """
+    Handles score controls from the web UI (inc, dec, reset).
+    This function updates the DB and emits the new state.
+    """
     data = request.get_json()
-    if not data: return jsonify({"error": "Invalid request"}), 400
     court_id = data.get('court_id')
     action = data.get('action')
-    if court_id is None or action is None: return jsonify({"error": "Missing court_id or action"}), 400
 
-    conn = get_db_connection()
-    scoreboard = conn.execute("SELECT * FROM scoreboards WHERE court_id = ?", (court_id,)).fetchone()
-    if not scoreboard:
-        return jsonify({"error": "No scoreboard assigned to this court"}), 404
+    if not court_id or not action:
+        return jsonify({'error': 'Court ID and action are required'}), 400
 
-    score_a, score_b = scoreboard['score_A'], scoreboard['score_B']
-    if action == 'inc_a': score_a += 1
-    elif action == 'dec_a' and score_a > 0: score_a -= 1
-    elif action == 'inc_b': score_b += 1
-    elif action == 'dec_b' and score_b > 0: score_b -= 1
-    elif action == 'reset': score_a, score_b = 0, 0
-    else:
-        return jsonify({"error": "Invalid action"}), 400
-
-    conn.execute("UPDATE scoreboards SET score_A = ?, score_B = ?, updated_by = 'web' WHERE id = ?", (score_a, score_b, scoreboard['id']))
-    conn.commit()
-
-    # [UPDATED] Broadcast the score update to all connected web clients
-    payload = {
-        'type': 'score_updated', # Add a type for the frontend to identify the message
-        'payload': {
-            'court_id': court_id,
-            'score_A': score_a,
-            'score_B': score_b
-        }
+    actions = {
+        'inc_a': "score_A = score_A + 1",
+        'dec_a': "score_A = MAX(0, score_A - 1)",
+        'inc_b': "score_B = score_B + 1",
+        'dec_b': "score_B = MAX(0, score_B - 1)",
+        'reset': "score_A = 0, score_B = 0"
     }
-    broadcast_to_web(json.dumps(payload))
-    
-    # [UPDATED] Send the score update to the specific physical scoreboard
-    if scoreboard['device_id']:
-        esp_payload = {
-            'score_A': score_a,
-            'score_B': score_b,
-            'is_swapped': scoreboard['is_swapped']
-        }
-        broadcast_to_esp(json.dumps(esp_payload), device_id=scoreboard['device_id'])
 
-    return jsonify({'message': 'Action successful'}), 200
+    if action not in actions:
+        return jsonify({'error': 'Invalid action'}), 400
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        # Update scores in DB
+        query = f"UPDATE scoreboards SET {actions[action]}, updated_by = 'web' WHERE court_id = ?"
+        cursor.execute(query, (court_id,))
+        conn.commit()
+
+        # Get the new scores to broadcast
+        new_scores = cursor.execute("SELECT score_A, score_B FROM scoreboards WHERE court_id = ?", (court_id,)).fetchone()
+        
+        if new_scores:
+            # --- TÍCH HỢP SOCKET.IO ---
+            # This is the same event the Redis listener uses.
+            # This ensures the UI updates consistently whether the score
+            # is changed by a device or by the web UI.
+            payload = {
+                'court_id': court_id,
+                'score_A': new_scores['score_A'],
+                'score_B': new_scores['score_B']
+            }
+            socketio.emit('score_updated', payload)
+            print(f"[API] Emitted 'score_updated': {payload}")
+
+        # LƯU Ý: Logic để gửi lệnh ngược lại cho ESP qua Redis
+        # sẽ cần được thêm vào đây nếu muốn điều khiển 2 chiều.
+        
+        return jsonify({'message': f'Action {action} performed'}), 200
+    except sqlite3.Error as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500

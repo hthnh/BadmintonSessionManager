@@ -1,27 +1,40 @@
+# Filename: extensions.py
+"""
+Centralized extensions initialization.
 
-web_clients = set()
-esp_clients = {} 
+This file initializes shared extensions (like SocketIO and Redis) 
+to avoid circular imports and provide a single source of truth.
+"""
 
-# --- Broadcasting Functions ---
-# These are defined at the top level so blueprints can import them.
-def broadcast_to_web(message_json):
-    """Sends a message to all connected web clients."""
-    for client in list(web_clients):
-        try:
-            client.send(message_json)
-        except Exception:
-            web_clients.remove(client)
+from flask_socketio import SocketIO
+import redis
+import os
 
-def broadcast_to_esp(message_json, device_id=None):
-    """Sends a message to a specific ESP device or all devices if device_id is None."""
-    targets = []
-    if device_id and device_id in esp_clients:
-        targets.append((device_id, esp_clients[device_id]))
-    elif not device_id:
-        targets = list(esp_clients.items())
+# 1. Initialize SocketIO for the WEB server
+# We use 'threading' as async_mode for compatibility with Flask development server.
+# (Restored from original version ...7457...)
+socketio = SocketIO(async_mode='threading', cors_allowed_origins="*")
 
-    for did, client in targets:
-        try:
-            client.send(message_json)
-        except Exception:
-            del esp_clients[did]
+# 2. Initialize Redis client
+# (Added for the new PubSub architecture)
+# This client connects to the Redis server.
+# It uses REDIS_URL from environment variables if available, 
+# otherwise defaults to localhost.
+try:
+    redis_url = os.environ.get('REDIS_URL', 'redis://localhost:7777/0')
+    # decode_responses=True ensures we get strings, not bytes, from Redis
+    redis_client = redis.Redis.from_url(redis_url, decode_responses=True)
+    # Test the connection
+    redis_client.ping()
+    print(f"Successfully connected to Redis at {redis_url}")
+except redis.exceptions.ConnectionError as e:
+    print(f"--- FATAL ERROR: Could not connect to Redis ---")
+    print(f"Error: {e}")
+    print("Please ensure Redis server is running at the specified URL.")
+    # We can choose to exit or let it fail later
+    # For now, we'll set client to None
+    redis_client = None
+
+# 3. Define the Redis Channel name
+# This MUST match the channel used by sock_server.py
+REDIS_SCOREBOARD_CHANNEL = "scoreboard_updates"
