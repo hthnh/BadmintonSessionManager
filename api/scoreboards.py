@@ -1,7 +1,8 @@
 # api/scoreboards.py
 from flask import Blueprint, request, jsonify
 import sqlite3
-from extensions import socketio 
+from extensions import socketio, redis_client
+import json
 
 scoreboards_api = Blueprint('scoreboards_api', __name__)
 
@@ -44,10 +45,16 @@ def update_score_from_device(device_id):
     conn.commit()
     scoreboard = cursor.execute("SELECT court_id FROM scoreboards WHERE device_id = ?", (device_id,)).fetchone()
     conn.close()
+
     if scoreboard and scoreboard['court_id'] is not None:
-        socketio.emit('score_updated', {
+        payload = {
             'court_id': scoreboard['court_id'], 'score_A': score_a, 'score_B': score_b
-        })
+        }
+        socketio.emit('score_updated', payload)
+
+        redis_payload = {'event': 'score_updated', 'data': payload}
+        redis_client.publish('scoreboard_updates', json.dumps(redis_payload))
+
     return jsonify({'message': 'Score updated'}), 200
 
 # [UPDATED] More robust assignment logic
@@ -104,7 +111,14 @@ def toggle_swap():
     if cursor.rowcount > 0:
         # Get the new state and emit an event so the UI can update instantly
         updated_board = conn.execute("SELECT id, device_id, is_swapped FROM scoreboards WHERE court_id = ?", (court_id,)).fetchone()
-        socketio.emit('board_state_updated', dict(updated_board))
+        payload = dict(updated_board) if updated_board else {}
+
+    # Dòng cũ, giữ nguyên
+        socketio.emit('board_state_updated', payload)
+
+        # [MỚI] Thêm đoạn này để publish lên Redis
+        redis_payload = {'event': 'board_state_updated', 'data': payload}
+        redis_client.publish('scoreboard_updates', json.dumps(redis_payload))
         conn.close()
         return jsonify({'message': 'Swap state toggled successfully.'})
     else:
@@ -140,10 +154,16 @@ def control_scoreboard():
     conn.commit()
     conn.close()
 
-    socketio.emit('score_updated', {
+    payload = {
         'court_id': court_id,
         'score_A': score_a,
         'score_B': score_b
-    })
+    }
+    # Dòng cũ, giữ nguyên
+    socketio.emit('score_updated', payload)
+
+    # [MỚI] Thêm đoạn này để publish lên Redis
+    redis_payload = {'event': 'score_updated', 'data': payload}
+    redis_client.publish('scoreboard_updates', json.dumps(redis_payload))
     
     return jsonify({'message': 'Action successful'}), 200

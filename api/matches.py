@@ -1,8 +1,9 @@
 # api/matches.py
 from flask import Blueprint, request, jsonify
 import sqlite3
-import logic
-from extensions import socketio
+from extensions import socketio, redis_client
+import json
+
 
 matches_api = Blueprint('matches_api', __name__)
 
@@ -88,10 +89,15 @@ def begin_queued_match(match_id):
             "UPDATE scoreboards SET score_A = 0, score_B = 0, updated_by = 'system' WHERE court_id = ?",
             (court_id,)
         )
-        socketio.emit('score_updated', {
+        payload = {
             'court_id': court_id, 'score_A': 0, 'score_B': 0
-        })
+        }
+        # Dòng cũ, giữ nguyên
+        socketio.emit('score_updated', payload)
 
+        # [MỚI] Thêm đoạn này để publish lên Redis
+        redis_payload = {'event': 'score_updated', 'data': payload}
+        redis_client.publish('scoreboard_updates', json.dumps(redis_payload))
         conn.commit()
         return jsonify({'message': 'The match has officially started!'})
     except sqlite3.Error as e:
