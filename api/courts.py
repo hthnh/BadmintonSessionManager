@@ -6,7 +6,7 @@ from database import get_db_connection
 courts_api = Blueprint('courts_api', __name__)
 
 
-@courts_api.route('/courts', methods=['GET'])
+@courts_api.route('/courts/', methods=['GET'])
 def get_courts():
     conn = get_db_connection()
     courts = conn.execute('SELECT * FROM courts ORDER BY name ASC').fetchall()

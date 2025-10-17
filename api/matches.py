@@ -13,7 +13,7 @@ matches_api = Blueprint('matches_api', __name__)
 
 
 # --- CÁC ENDPOINT GET (Giữ nguyên) ---
-@matches_api.route('/matches/ongoing', methods=['GET'])
+@matches_api.route('/matches/ongoing/', methods=['GET'])
 def get_ongoing_matches():
     query = """
         SELECT m.id as match_id, m.court_id, c.name as court_name, m.start_time,
@@ -36,7 +36,7 @@ def get_ongoing_matches():
 
 
 
-@matches_api.route('/matches/queued', methods=['GET'])
+@matches_api.route('/matches/queued/', methods=['GET'])
 def get_queued_matches():
     # The query is updated to use LEFT JOIN to include matches without a court assigned
     query = """
@@ -68,7 +68,7 @@ def get_queued_matches():
 
 
 
-@matches_api.route('/matches/history', methods=['GET'])
+@matches_api.route('/matches/history/', methods=['GET'])
 def get_match_history():
     query = """
         SELECT

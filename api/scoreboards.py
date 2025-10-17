@@ -14,7 +14,7 @@ from extensions import socketio # Quan trọng: import socketio để phát sự
 
 scoreboards_api = Blueprint('scoreboards_api', __name__)
 
-@scoreboards_api.route('/scoreboards', methods=['GET'])
+@scoreboards_api.route('/scoreboards/', methods=['GET'])
 def get_all_scoreboards():
     """Fetches all registered scoreboard devices."""
     try:

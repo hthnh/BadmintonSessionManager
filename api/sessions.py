@@ -6,7 +6,7 @@ from database import get_db_connection
 sessions_api = Blueprint('sessions_api', __name__)
 
 
-@sessions_api.route('/sessions/current', methods=['GET'])
+@sessions_api.route('/sessions/current/', methods=['GET'])
 def get_current_session():
     """Lấy thông tin về phiên đang hoạt động."""
     conn = get_db_connection()

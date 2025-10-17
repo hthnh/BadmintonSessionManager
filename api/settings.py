@@ -7,7 +7,7 @@ settings_api = Blueprint('settings_api', __name__)
 
 
 
-@settings_api.route('/settings', methods=['GET'])
+@settings_api.route('/settings/', methods=['GET'])
 def get_settings():
     conn = get_db_connection()
     settings_rows = conn.execute('SELECT key, value FROM settings').fetchall()

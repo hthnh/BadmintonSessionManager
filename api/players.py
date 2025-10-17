@@ -8,11 +8,12 @@ from database import get_db_connection
 players_api = Blueprint('players_api', __name__)
 
 
-@players_api.route('/players', methods=['GET'])
+@players_api.route('/players/', methods=['GET'])
 def get_players():
     conn = get_db_connection()
-    players = conn.execute('SELECT * FROM players ORDER BY name ASC').fetchall()
-    return jsonify([dict(row) for row in players])
+    players_rows = conn.execute('SELECT * FROM players ORDER BY name ASC').fetchall()
+    players_list = [dict(row) for row in players_rows]
+    return jsonify(players=players_list)
 
 @players_api.route('/players/<int:player_id>', methods=['GET'])
 def get_player_by_id(player_id):
@@ -97,7 +98,7 @@ def delete_player(player_id):
 
 # Thêm vào cuối file api/players.py
 
-@players_api.route('/players/available', methods=['GET'])
+@players_api.route('/players/available/', methods=['GET'])
 def get_available_players():
     """
     Chỉ trả về danh sách người chơi thỏa mãn các điều kiện sau:

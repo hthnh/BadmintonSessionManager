@@ -13,7 +13,9 @@ This is the primary server that handles:
 import os
 import json
 import sqlite3
-from flask import Flask, render_template, send_from_directory
+from flask import Flask
+from flask_cors import CORS
+
 
 # --- Import extensions (from Step 1.2) ---
 # We import socketio (for web) and redis_client (for pubsub)
@@ -45,9 +47,11 @@ def create_app():
                 template_folder='templates')
     app.config['SECRET_KEY'] = 'deoaithongminhhontao' 
 
+
     # --- Initialize Extensions ---
     database.init_app(app)     
-    socketio.init_app(app)    
+    socketio.init_app(app, cors_allowed_origins="*")
+    CORS(app)     
     
     # --- Register API Blueprints ---   
     app.register_blueprint(players_api, url_prefix='/api')
@@ -61,45 +65,6 @@ def create_app():
     return app
 
 app = create_app()
-
-# --- HTML Routes ---
-
-@app.route('/favicon.ico')
-def favicon():
-    return send_from_directory(os.path.join(app.root_path, 'static'),
-                               'favicon.ico', mimetype='image/vnd.microsoft.icon')
-
-@app.route('/')
-def home():
-    """Serves the main dashboard page."""
-
-    return render_template('dashboard.html', active_page='dashboard')
-
-@app.route('/settings')
-def settings_page():
-    """Serves the settings page."""
-    return render_template('settings.html', active_page='settings')
-
-@app.route('/manage-players')
-def players_page():
-    """Serves the player management page."""
-    return render_template('players.html', active_page='players')
-
-@app.route('/manage-courts')
-def courts_page():
-    """Serves the court management page."""
-    return render_template('courts.html', active_page='courts')
-
-@app.route('/history')
-def history_page():
-    """Serves the match history page."""
-    return render_template('history.html', active_page='history')
-
-@app.route('/create')
-def create_page():
-    """Serves the manual match creation page."""
-    return render_template('create.html', active_page='create')
-
 
 # --- SocketIO Handlers for WEB Clients ---
 
